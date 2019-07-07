@@ -1,4 +1,12 @@
 [[package]]
+name = "arrayvec"
+version = "0.4.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "nodrop 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "autocfg"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -61,6 +69,11 @@ dependencies = [
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "nodrop"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "pancurses"
@@ -140,6 +153,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "tetrust"
 version = "0.1.0"
 dependencies = [
+ "arrayvec 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "pancurses 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -172,6 +186,7 @@ dependencies = [
 ]
 
 [metadata]
+"checksum arrayvec 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)" = "92c7fb76bc8826a8b33b4ee5bb07a247a81e76764ab4d55e8f73e3a4d8808c71"
 "checksum autocfg 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "0e49efa51329a5fd37e7c79db4621af617cd4e3e5bc224939808d076077077bf"
 "checksum c2-chacha 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7d64d04786e0f528460fc884753cf8dddcc466be308f6026f8e355c41a0e4101"
 "checksum cc 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)" = "39f75544d7bbaf57560d2168f28fd649ff9c76153874db88bdbdfd839b1a7e7d"
@@ -181,6 +196,7 @@ dependencies = [
 "checksum libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)" = "6281b86796ba5e4366000be6e9e18bf35580adf9e63fbe2294aadb587613a319"
 "checksum log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c84ec4b527950aa83a329754b01dbe3f58361d1c5efacd1f6d68c494d08a17c6"
 "checksum ncurses 5.99.0 (registry+https://github.com/rust-lang/crates.io-index)" = "15699bee2f37e9f8828c7b35b2bc70d13846db453f2d507713b758fabe536b82"
+"checksum nodrop 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "2f9667ddcc6cc8a43afc9b7917599d7216aa09c463919ea32c59ed6cac8bc945"
 "checksum pancurses 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d3058bc37c433096b2ac7afef1c5cdfae49ede0a4ffec3dfc1df1df0959d0ff0"
 "checksum pdcurses-sys 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "084dd22796ff60f1225d4eb6329f33afaf4c85419d51d440ab6b8c6f4529166b"
 "checksum pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)" = "676e8eb2b1b4c9043511a9b7bea0915320d7e502b0a079fb03f9635a5252b18c"

@@ -27,7 +27,7 @@ impl BlockType {
         BLOCKTYPES[rng.gen_range(0, BLOCKTYPES.len())]
     }
 
-    pub fn to_char(&self) -> char {
+    pub fn block_char(&self) -> char {
         match *self {
             BlockType::I => 'O',
             BlockType::O => 'X',
@@ -39,8 +39,8 @@ impl BlockType {
         }
     }
 
-    #[rustfmt::skip]
-    pub fn to_block_array(&self) -> [(i32, i32); 4] {
+    #[rustfmt::skip] // skip rust formatting so that my block declarations can look pleasant
+    pub fn block_cells(&self) -> [(i32, i32); 4] {
         match *self {
             BlockType::I =>
                 [

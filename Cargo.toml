@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 pancurses = "0.16"
 rand = "0.7.0"
+arrayvec = "0.4.10"

@@ -26,9 +26,10 @@
 
 ### Steps
 
-- [X] Get a tetromino to render
+- [X] Get a tetromino to render: 76babe55
 ![Image of text-tetrominoes rendering](demo/1-render.gif)
-- [ ] Get a tetromino to fall
+- [X] Get a tetromino to fall: <insert hash here>
+![Image of text-tetrominoes falling](demo/2-fall.gif)
 - [ ] Get a tetromino to stick
 - [ ] Get two tetrominos to stack
 - [ ] Allow clearing lines

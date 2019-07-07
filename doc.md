@@ -10,26 +10,28 @@
 ## Goals
 
 - Basic tetris mechanics
-    - tetrimino gravity
-    - rotating tetriminos
-    - dropping tetriminos
+    - tetromino gravity
+    - rotating tetrominos
+    - dropping tetrominos
     - clearing lines
     - score
     - end game when top of screen reached
 
 - Extensions
     - game music
+    - ai/autoplay
+    - ai/competitive
     - multiplayer
     - network multiplayer
 
 ### Steps
 
-- Get a tetrimino to render
-- Get a tetrimino to fall
-- Get a tetrimino to stick
-- Get two tetriminos to stack
-- Allow clearing lines
-- Generate/Preview random blocks
-- Handle game lose state
-- Handle scoring
+- [X] Get a tetromino to render
+- [ ] Get a tetromino to fall
+- [ ] Get a tetromino to stick
+- [ ] Get two tetrominos to stack
+- [ ] Allow clearing lines
+- [ ] Generate/Preview random blocks
+- [ ] Handle game lose state
+- [ ] Handle scoring
 

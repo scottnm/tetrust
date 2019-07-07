@@ -5,3 +5,5 @@ authors = ["Scott Munro <scottnmunro@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+pancurses = "0.16"
+rand = "0.7.0"

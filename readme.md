@@ -1,4 +1,4 @@
-# Rustris
+# Tetrust
 
 ## Intent
 
@@ -26,9 +26,9 @@
 
 ### Steps
 
-- [X] Get a tetromino to render: 76babe55dcab890374494fc912e77d16b2fe0e48
+- [X] [Get a tetromino to render](https://github.com/scottnm/tetrust/commit/76babe55dcab890374494fc912e77d16b2fe0e48)
 ![Image of text-tetrominoes rendering](demo/1-render.gif)
-- [X] Get a tetromino to fall: f3aca54cb39c7137e0c38f52fd2c4c8d9f23af4b
+- [X] [Get a tetromino to fall](https://github.com/scottnm/tetrust/commit/f3aca54cb39c7137e0c38f52fd2c4c8d9f23af4b)
 ![Image of text-tetrominoes falling](demo/2-fall.gif)
 - [ ] Get a tetromino to stick
 - [ ] Get two tetrominos to stack

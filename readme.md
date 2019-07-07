@@ -2,10 +2,10 @@
 
 ## Intent
 
-- Practice data-oriented design
-- Practice entity-component systems
+- Attempt to make use of data-oriented design
+- Attempt to make use entity systems
 - Practice rust
-- Practice using a TUI (cuz tuis are cool)
+- Use a TUI (cuz tuis are cool)
 
 ## Goals
 
@@ -27,6 +27,7 @@
 ### Steps
 
 - [X] Get a tetromino to render
+![Image of text-tetrominoes rendering](demo/1-render.gif)
 - [ ] Get a tetromino to fall
 - [ ] Get a tetromino to stick
 - [ ] Get two tetrominos to stack

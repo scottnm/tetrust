@@ -1,5 +1,5 @@
 [package]
-name = "rustris"
+name = "tetrust"
 version = "0.1.0"
 authors = ["Scott Munro <scottnmunro@gmail.com>"]
 edition = "2018"

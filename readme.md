@@ -32,6 +32,7 @@
 ![Image of text-tetrominoes falling](demo/2-fall.gif)
 - [ ] Get a tetromino to stick
 - [ ] Get two tetrominos to stack
+- [ ] Constrain board size
 - [ ] Allow clearing lines
 - [ ] Generate/Preview random blocks
 - [ ] Handle game lose state

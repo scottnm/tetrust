@@ -34,7 +34,7 @@
 ![Image of text-tetrominoes rendering](demo/1-render.gif)
 - [X] [Get a tetromino to fall](https://github.com/scottnm/tetrust/commit/f3aca54cb39c7137e0c38f52fd2c4c8d9f23af4b)
 ![Image of text-tetrominoes falling](demo/2-fall.gif)
-- [X] Get tetrominos to stack on each other and floor
+- [X] [Get tetrominos to stack on each other and floor](https://github.com/scottnm/tetrust/commit/915e61e7d227fea6e134da75f864629514f3c9f8)
 ![Image of text-tetrominoes stacking](demo/3-stack.gif)
 - [ ] Generate tetrominos based on game rules
 - [ ] Constrain board size

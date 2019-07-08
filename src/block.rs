@@ -12,6 +12,8 @@ pub enum BlockType {
     L,
 }
 
+// TODO: add Cell tuple struct
+
 pub static BLOCKTYPES: [BlockType; 7] = [
     BlockType::I,
     BlockType::O,
@@ -27,7 +29,7 @@ impl BlockType {
         BLOCKTYPES[rng.gen_range(0, BLOCKTYPES.len())]
     }
 
-    pub fn block_char(&self) -> char {
+    pub fn sprite_char(&self) -> char {
         match *self {
             BlockType::I => 'O',
             BlockType::O => 'X',
@@ -40,7 +42,7 @@ impl BlockType {
     }
 
     #[rustfmt::skip] // skip rust formatting so that my block declarations can look pleasant
-    pub fn block_cells(&self) -> [(i32, i32); 4] {
+    pub fn cells(&self) -> [(i32, i32); 4] {
         match *self {
             BlockType::I =>
                 [
@@ -88,5 +90,11 @@ impl BlockType {
                     (2, 0), (2, 1),
                 ],
         }
+    }
+
+    pub fn height(&self) -> i32 {
+        // TODO (scottnm): handle different block orientations
+        // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
+        self.cells().iter().max_by_key(|cell| cell.0).unwrap().0
     }
 }

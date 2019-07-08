@@ -9,13 +9,17 @@
 
 ## Goals
 
+- Basic tetris rules
+    - fixed sized grid
+    - blocks fall one at a time
+    - end game when top of screen reached
+
 - Basic tetris mechanics
     - tetromino gravity
     - rotating tetrominos
     - dropping tetrominos
     - clearing lines
     - score
-    - end game when top of screen reached
 
 - Extensions
     - game music
@@ -30,8 +34,9 @@
 ![Image of text-tetrominoes rendering](demo/1-render.gif)
 - [X] [Get a tetromino to fall](https://github.com/scottnm/tetrust/commit/f3aca54cb39c7137e0c38f52fd2c4c8d9f23af4b)
 ![Image of text-tetrominoes falling](demo/2-fall.gif)
-- [ ] Get a tetromino to stick
-- [ ] Get two tetrominos to stack
+- [X] Get tetrominos to stack on each other and floor
+![Image of text-tetrominoes stacking](demo/3-stack.gif)
+- [ ] Generate tetrominos based on game rules
 - [ ] Constrain board size
 - [ ] Allow clearing lines
 - [ ] Generate/Preview random blocks

@@ -44,6 +44,7 @@
 
 - [ ] Generate tetrominos based on game rules
 - [ ] Constrain board size
+- [ ] Allow tetrominos to rotate
 - [ ] Allow clearing lines
 - [ ] Generate/Preview random blocks
 - [ ] Handle game lose state

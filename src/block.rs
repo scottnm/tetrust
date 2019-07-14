@@ -1,7 +1,7 @@
-extern crate rand;
 extern crate pancurses;
+extern crate rand;
 
-use rand::{rngs, Rng};
+use rand::Rng;
 
 #[derive(Clone, Copy, Debug)]
 pub enum BlockType {
@@ -14,7 +14,18 @@ pub enum BlockType {
     L,
 }
 
-// TODO: add Cell tuple struct
+#[derive(Clone, Copy)]
+pub struct Cell(pub i32, pub i32);
+
+macro_rules! cell_array {
+    ( $(($x:expr,$y:expr)),* $(,)?) => {
+        [
+            $(
+                Cell($x,$y),
+            )*
+        ]
+    };
+}
 
 pub static BLOCKTYPES: [BlockType; 7] = [
     BlockType::I,
@@ -27,7 +38,7 @@ pub static BLOCKTYPES: [BlockType; 7] = [
 ];
 
 impl BlockType {
-    pub fn random(rng: &mut rngs::ThreadRng) -> BlockType {
+    pub fn random(rng: &mut rand::rngs::ThreadRng) -> BlockType {
         BLOCKTYPES[rng.gen_range(0, BLOCKTYPES.len())]
     }
 
@@ -56,10 +67,10 @@ impl BlockType {
     }
 
     #[rustfmt::skip] // skip rust formatting so that my block declarations can look pleasant
-    pub fn cells(&self) -> [(i32, i32); 4] {
+    pub fn cells(&self) -> [Cell; 4] {
         match *self {
             BlockType::I =>
-                [
+                cell_array![
                     (0, 0),
                     (1, 0),
                     (2, 0),
@@ -67,38 +78,38 @@ impl BlockType {
                 ],
 
             BlockType::O =>
-                [
+                cell_array![
                     (0, 0), (0, 1),
                     (1, 0), (1, 1),
                 ],
 
             BlockType::T =>
-                [
+                cell_array![
                     (0, 0), (0, 1), (0, 2),
                             (1, 1),
                 ],
 
             BlockType::S =>
-                [
+                cell_array![
                             (0, 1), (0, 2),
                     (1, 0), (1, 1),
                 ],
 
             BlockType::Z =>
-                [
+                cell_array![
                     (0, 0), (0, 1),
                             (1, 1), (1, 2),
                 ],
 
             BlockType::J =>
-                [
+                cell_array![
                             (0, 1),
                             (1, 1),
                     (2, 0), (2, 1),
                 ],
 
             BlockType::L =>
-                [
+                cell_array![
                     (0, 0),
                     (1, 0),
                     (2, 0), (2, 1),
@@ -106,9 +117,15 @@ impl BlockType {
         }
     }
 
+    pub fn width(&self) -> i32 {
+        // TODO (scottnm): handle different block orientations
+        // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
+        self.cells().iter().max_by_key(|cell| cell.1).unwrap().1 + 1
+    }
+
     pub fn height(&self) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        self.cells().iter().max_by_key(|cell| cell.0).unwrap().0
+        self.cells().iter().max_by_key(|cell| cell.0).unwrap().0 + 1
     }
 }

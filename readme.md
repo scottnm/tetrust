@@ -46,7 +46,10 @@
 
 ![Image of tetrominoes with color](demo/4-color.gif)
 
-- [ ] Generate tetrominos based on game rules
+- [X] [Generate tetrominos based on game rules](https://github.com/scottnm/tetrust/commit/1c547fc7bc0d701fa8e7117592c61a0a5b693840)
+
+![Image of tetrominoes falling one at a time](demo/5-generate-by-rules.gif)
+
 - [ ] Constrain board size
 - [ ] Allow tetrominos to rotate
 - [ ] Allow clearing lines

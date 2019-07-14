@@ -1,17 +1,13 @@
 mod block;
-use crate::block::*;
-
-extern crate arrayvec;
 extern crate pancurses;
 extern crate rand;
 
-use arrayvec::ArrayVec;
-use pancurses::{endwin, initscr, Window};
-use rand::{thread_rng, Rng};
-use std::{thread, time};
+use crate::block::*;
+use rand::Rng;
+use std::time;
 
-fn translate_cells(cells: &[(i32, i32); 4], (row_translation, col_translation): (i32, i32)) -> [(i32, i32); 4] {
-    let mut translated_cells: [(i32, i32); 4] = *cells;
+fn translate_cells(cells: &[Cell; 4], row_translation: i32, col_translation: i32) -> [Cell; 4] {
+    let mut translated_cells: [Cell; 4] = *cells;
     for cell_index in 0..translated_cells.len() {
         translated_cells[cell_index].0 += row_translation;
         translated_cells[cell_index].1 += col_translation;
@@ -20,21 +16,26 @@ fn translate_cells(cells: &[(i32, i32); 4], (row_translation, col_translation): 
     translated_cells
 }
 
-fn touching_floor(block: BlockType, block_pos: (i32, i32), floor_pos: i32) -> bool {
+fn is_resting_on_floor(block: BlockType, block_pos: Cell, floor_pos: i32) -> bool {
     block_pos.0 + block.height() >= floor_pos
 }
 
-fn will_collide_with_other_block(block_types: &[BlockType], block_positions: &[(i32, i32)], block_id: usize) -> bool {
-    let block = block_types[block_id];
+fn is_resting_on_other_block(
+    blocks: &[BlockType],
+    block_positions: &[Cell],
+    block_id: usize,
+) -> bool {
+    let block = blocks[block_id];
     let block_pos = block_positions[block_id];
-    let block_cells = translate_cells(&block.cells(), block_pos);
+    let block_cells = translate_cells(&block.cells(), block_pos.0, block_pos.1);
 
     // Only need to check for collisions against blocks that were created before this block id
     // since all other blocks will always be higher up in the grid.
     for other_block_id in 0..block_id {
-        let other_block = block_types[other_block_id];
+        let other_block = blocks[other_block_id];
         let other_block_pos = block_positions[other_block_id];
-        let other_block_cells = translate_cells(&other_block.cells(), other_block_pos);
+        let other_block_cells =
+            translate_cells(&other_block.cells(), other_block_pos.0, other_block_pos.1);
 
         for cell in block_cells.iter() {
             for other_cell in other_block_cells.iter() {
@@ -48,11 +49,11 @@ fn will_collide_with_other_block(block_types: &[BlockType], block_positions: &[(
     false
 }
 
-fn render_block(window: &Window, (row, col): (i32, i32), block_type: BlockType) {
-    let sprite_char = block_type.sprite_char();
-    let color_pair = pancurses::COLOR_PAIR(block_type as pancurses::chtype);
+fn render_block(window: &pancurses::Window, Cell(row, col): Cell, block: BlockType) {
+    let sprite_char = block.sprite_char();
+    let color_pair = pancurses::COLOR_PAIR(block as pancurses::chtype);
     window.attron(color_pair);
-    for cell in block_type.cells().iter() {
+    for cell in block.cells().iter() {
         // Ok to blit block sprite even if position is OOB
         window.mvaddch(cell.0 + row, cell.1 + col, sprite_char);
     }
@@ -69,54 +70,88 @@ fn setup_colors() {
 }
 
 fn main() {
-    const BLOCK_GENERATION_PERIOD: time::Duration = time::Duration::from_millis(500); // generate a new block once a second
-    const BLOCK_MOVE_PERIOD: time::Duration = time::Duration::from_millis(250);
-    const MAX_BLOCKS: usize = 40;
-    const RUN_TIME: time::Duration = time::Duration::from_secs(20); // run long enough to generate all blocks
-    const RENDER_REFRESH_PERIOD: time::Duration = time::Duration::from_millis(16); // 60 fps
+    let mut rng = rand::thread_rng();
+    let window = pancurses::initscr();
 
-    let window = initscr();
+    const DEFAULT_BLOCK_MOVE_PERIOD: time::Duration = time::Duration::from_millis(250);
+    let mut block_move_period = DEFAULT_BLOCK_MOVE_PERIOD;
+
+    pancurses::noecho();
+    pancurses::cbreak();
+    pancurses::set_title("TETRUST");
+    window.nodelay(true);
     setup_colors();
 
-    let mut rng = thread_rng();
-
-    let start_time = time::Instant::now();
-    let mut last_block_generation_timestamp = time::Instant::now();
     let mut last_move_timestamp = time::Instant::now();
+    let mut generate_block = true;
 
-    let mut block_types = ArrayVec::<[BlockType; MAX_BLOCKS]>::new();
-    let mut block_positions = ArrayVec::<[(i32, i32); MAX_BLOCKS]>::new();
+    let max_blocks = (window.get_max_x() * window.get_max_y()) as usize;
+    let mut block_count = 0;
+    let mut blocks = vec![BlockType::I; max_blocks];
+    let mut block_positions = vec![Cell(0, 0); max_blocks];
 
-    while start_time.elapsed() < RUN_TIME {
+    loop {
         //
-        // Game logic:
-        // - generate a new block periodically
-        // - move every block periodically
+        // Input handling:
+        // - A -> slowdown time
+        // - S -> reset time
+        // - D -> speed up time
         //
-        if last_block_generation_timestamp.elapsed() >= BLOCK_GENERATION_PERIOD {
-            assert!(!block_types.is_full());
-            assert!(!block_positions.is_full());
-
-            let new_block_type = BlockType::random(&mut rng);
-            let start_col: i32 = rng.gen_range(0, window.get_max_x());
-
-            block_types.push(new_block_type);
-            block_positions.push((-new_block_type.height(), start_col));
-
-            last_block_generation_timestamp = time::Instant::now();
+        if let Some(pancurses::Input::Character(ch)) = window.getch() {
+            match ch {
+                'a' => block_move_period *= 2,
+                's' => block_move_period = DEFAULT_BLOCK_MOVE_PERIOD,
+                'd' => block_move_period /= 2,
+                _ => (),
+            }
         }
 
-        if last_move_timestamp.elapsed() >= BLOCK_MOVE_PERIOD {
-            assert_eq!(block_types.len(), block_positions.len());
-            for block_id in 0..block_types.len() {
-                // Don't update the block position if we are already touching the floor or are
-                // about to collide with another block
-                if !touching_floor(block_types[block_id], block_positions[block_id], window.get_max_y() - 1) &&
-                   !will_collide_with_other_block(block_types.as_slice(), block_positions.as_slice(), block_id) {
-                    block_positions[block_id].0 += 1;
-                }
-            }
+        //
+        // Game logic:
+        // - generate a new block whenever one is not already falling
+        // - move every falling block periodically
+        //
+        if generate_block {
+            generate_block = false;
+
+            assert_eq!(blocks.len(), block_positions.len());
+            assert!(block_count < blocks.len());
+
+            let new_block = BlockType::random(&mut rng);
+            let start_col: i32 = rng.gen_range(0, window.get_max_x() - new_block.width());
+
+            blocks[block_count] = new_block;
+            block_positions[block_count] = Cell(-new_block.height(), start_col);
+            block_count += 1;
+        }
+
+        if last_move_timestamp.elapsed() >= block_move_period {
             last_move_timestamp = time::Instant::now();
+            let moving_block_id = block_count - 1; // we are always moving the last block
+
+            assert_eq!(blocks.len(), block_positions.len());
+            let block_has_landed = is_resting_on_floor(
+                blocks[moving_block_id],
+                block_positions[moving_block_id],
+                window.get_max_y(),
+            ) || is_resting_on_other_block(
+                &blocks[..block_count],
+                &block_positions[..block_count],
+                moving_block_id,
+            );
+
+            if block_has_landed {
+                assert!(!generate_block); // we should have already consumed generate_block at this point
+                generate_block = true;
+
+                // if the last block was placed above the board, the game is over
+                if block_positions[moving_block_id].0 < 0 {
+                    println!("Lose!");
+                    break;
+                }
+            } else {
+                block_positions[moving_block_id].0 += 1;
+            }
         }
 
         //
@@ -124,14 +159,14 @@ fn main() {
         //
         window.erase();
 
-        assert_eq!(block_types.len(), block_positions.len());
-        for block_id in 0..block_types.len() {
-            render_block(&window, block_positions[block_id], block_types[block_id]);
+        assert_eq!(blocks.len(), block_positions.len());
+        for block_id in 0..block_count {
+            render_block(&window, block_positions[block_id], blocks[block_id]);
         }
 
         window.refresh();
-        thread::sleep(RENDER_REFRESH_PERIOD);
     }
 
-    endwin();
+    pancurses::endwin();
+    println!("Finished");
 }

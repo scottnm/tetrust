@@ -50,9 +50,21 @@ fn will_collide_with_other_block(block_types: &[BlockType], block_positions: &[(
 
 fn render_block(window: &Window, (row, col): (i32, i32), block_type: BlockType) {
     let sprite_char = block_type.sprite_char();
+    let color_pair = pancurses::COLOR_PAIR(block_type as pancurses::chtype);
+    window.attron(color_pair);
     for cell in block_type.cells().iter() {
         // Ok to blit block sprite even if position is OOB
         window.mvaddch(cell.0 + row, cell.1 + col, sprite_char);
+    }
+    window.attroff(color_pair);
+}
+
+fn setup_colors() {
+    pancurses::start_color();
+
+    assert!(BLOCKTYPES.len() < pancurses::COLOR_PAIRS() as usize);
+    for block in BLOCKTYPES.iter() {
+        pancurses::init_pair(*block as i16, pancurses::COLOR_BLACK, block.sprite_color());
     }
 }
 
@@ -64,6 +76,8 @@ fn main() {
     const RENDER_REFRESH_PERIOD: time::Duration = time::Duration::from_millis(16); // 60 fps
 
     let window = initscr();
+    setup_colors();
+
     let mut rng = thread_rng();
 
     let start_time = time::Instant::now();

@@ -1,9 +1,11 @@
 extern crate rand;
+extern crate pancurses;
+
 use rand::{rngs, Rng};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum BlockType {
-    I,
+    I = 1, // NOTE (scottnm): if our enum starts at 0, init_pair doesn't seem to function. Needs investigation
     O,
     T,
     S,
@@ -38,6 +40,18 @@ impl BlockType {
             BlockType::Z => '<',
             BlockType::J => '/',
             BlockType::L => '\\',
+        }
+    }
+
+    pub fn sprite_color(&self) -> i16 {
+        match *self {
+            BlockType::I => pancurses::COLOR_WHITE,
+            BlockType::O => pancurses::COLOR_RED,
+            BlockType::T => pancurses::COLOR_CYAN,
+            BlockType::S => pancurses::COLOR_GREEN,
+            BlockType::Z => pancurses::COLOR_MAGENTA,
+            BlockType::J => pancurses::COLOR_YELLOW,
+            BlockType::L => pancurses::COLOR_BLUE,
         }
     }
 

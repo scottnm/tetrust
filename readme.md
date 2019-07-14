@@ -42,6 +42,10 @@
 
 ![Image of text-tetrominoes stacking](demo/3-stack.gif)
 
+- [X] Add color to tetrominoes
+
+![Image of tetrominoes with color](demo/4-color.gif)
+
 - [ ] Generate tetrominos based on game rules
 - [ ] Constrain board size
 - [ ] Allow tetrominos to rotate

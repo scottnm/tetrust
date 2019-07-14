@@ -42,7 +42,7 @@
 
 ![Image of text-tetrominoes stacking](demo/3-stack.gif)
 
-- [X] Add color to tetrominoes
+- [X] [Add color to tetrominoes](https://github.com/scottnm/tetrust/commit/1c547fc7bc0d701fa8e7117592c61a0a5b693840)
 
 ![Image of tetrominoes with color](demo/4-color.gif)
 

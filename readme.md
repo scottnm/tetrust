@@ -46,7 +46,7 @@
 
 ![Image of tetrominoes with color](demo/4-color.gif)
 
-- [X] [Generate tetrominos based on game rules](https://github.com/scottnm/tetrust/commit/1c547fc7bc0d701fa8e7117592c61a0a5b693840)
+- [X] [Generate tetrominos based on game rules](https://github.com/scottnm/tetrust/commit/b72efb7eb834d442885c35f5cbb8173c2b1ba887)
 
 ![Image of tetrominoes falling one at a time](demo/5-generate-by-rules.gif)
 

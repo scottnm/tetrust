@@ -6,10 +6,22 @@
     "configurations": [
 
         {
-            "name": "(Windows) Launch",
+            "name": "Main Debug (win)",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/tetrust.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true
+        },
+
+        {
+            "name": "Test Debug (win)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/deps/tetrust-6d3d9cec003a07c7.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

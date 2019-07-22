@@ -1,8 +1,6 @@
-extern crate pancurses;
-extern crate rand;
+use crate::randwrapper::*;
 
-use rand::Rng;
-
+// TODO (scottnm): separate out blocktype into blocktype and blockvisuals and blockdata (orientation+cells)
 #[derive(Clone, Copy, Debug)]
 pub enum BlockType {
     I = 1, // NOTE (scottnm): if our enum starts at 0, init_pair doesn't seem to function. Needs investigation
@@ -14,7 +12,7 @@ pub enum BlockType {
     L,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Cell(pub i32, pub i32);
 
 macro_rules! cell_array {
@@ -38,7 +36,7 @@ pub static BLOCKTYPES: [BlockType; 7] = [
 ];
 
 impl BlockType {
-    pub fn random(rng: &mut rand::rngs::ThreadRng) -> BlockType {
+    pub fn random<T: RangeRng<usize>>(rng: &mut T) -> BlockType {
         BLOCKTYPES[rng.gen_range(0, BLOCKTYPES.len())]
     }
 

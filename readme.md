@@ -50,12 +50,13 @@
 
 ![Image of tetrominoes falling one at a time](demo/5-generate-by-rules.gif)
 
-- [X] [Add some sort of test framework](https://github.com/scottnm/tetrust/commit/)
+- [X] [Add some sort of test framework](https://github.com/scottnm/tetrust/commit/2d4fbc7ba4b3579150d3a3c889dd88d99c34e578)
 
 ![Image of unit tests passing](demo/6-test.png)
 
-- [ ] Handle game lose state
+- [X] [Handle game lose state](https://github.com/scottnm/tetrust/commit/b72efb7eb834d442885c35f5cbb8173c2b1ba887)
 - [ ] Constrain board size
+- [ ] Handle left-right inputs
 - [ ] Allow tetrominos to rotate
 - [ ] Allow clearing lines
 - [ ] Generate/Preview random blocks

@@ -33,6 +33,7 @@ fn setup_colors() {
 fn main() {
     let window = pancurses::initscr();
 
+    const INPUT_POLL_PERIOD: time::Duration = time::Duration::from_millis(125);
     const DEFAULT_GAME_TICK_PERIOD: time::Duration = time::Duration::from_millis(250);
     let mut game_tick_period = DEFAULT_GAME_TICK_PERIOD;
 
@@ -43,6 +44,8 @@ fn main() {
     setup_colors();
 
     let mut last_game_tick = time::Instant::now();
+    let mut last_input_handled = time::Instant::now();
+
     let mut game_state = GameState::new(
         window.get_max_x(),
         window.get_max_y(),
@@ -50,18 +53,36 @@ fn main() {
         ThreadRangeRng::new(),
     );
 
+    let mut inputs = (false, false);
+
     while !game_state.is_game_over() {
         // Input handling
         if let Some(pancurses::Input::Character(ch)) = window.getch() {
             match ch {
-                // slowdown time scale
-                'a' => game_tick_period *= 2,
-                // reset time scale
-                's' => game_tick_period = DEFAULT_GAME_TICK_PERIOD,
-                // speed up time scale
-                'd' => game_tick_period /= 2,
+                // check for movement inputs
+                'a' => inputs.0 = true, // move left
+                'd' => inputs.1 = true, // move right
+
+                // debug
+                'q' => break, // kill game early
+                'z' => game_tick_period *= 2, // slowdown tick rate
+                'x' => game_tick_period = DEFAULT_GAME_TICK_PERIOD, // reset tick rate
+                'c' => game_tick_period /= 2, // speed up tick rate
                 _ => (),
             }
+        }
+
+        if last_input_handled.elapsed() >= INPUT_POLL_PERIOD {
+            last_input_handled = time::Instant::now();
+            let mut horizontal_motion: i32 = 0;
+            if inputs.0 {
+                horizontal_motion -= 1;
+            }
+            if inputs.1 {
+                horizontal_motion += 1;
+            }
+            game_state.move_block_horizontal(horizontal_motion);
+            inputs = (false, false);
         }
 
         // Tick the game state

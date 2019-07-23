@@ -12,7 +12,7 @@ pub enum BlockType {
     L,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cell(pub i32, pub i32);
 
 macro_rules! cell_array {
@@ -37,7 +37,7 @@ pub static BLOCKTYPES: [BlockType; 7] = [
 
 impl BlockType {
     pub fn random<T: RangeRng<usize>>(rng: &mut T) -> BlockType {
-        BLOCKTYPES[rng.gen_range(0, BLOCKTYPES.len())]
+        BLOCKTYPES[rng.gen_range(1, BLOCKTYPES.len() + 1) - 1]
     }
 
     pub fn sprite_char(&self) -> char {

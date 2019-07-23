@@ -55,10 +55,16 @@
 ![Image of unit tests passing](demo/6-test.png)
 
 - [X] [Handle game lose state](https://github.com/scottnm/tetrust/commit/b72efb7eb834d442885c35f5cbb8173c2b1ba887)
+- [X] [Handle left-right inputs](https://github.com/scottnm/tetrust/commit/b72efb7eb834d442885c35f5cbb8173c2b1ba887)
+
+![Image of left-right collision](demo/7-lr-collision.gif)
+
 - [ ] Constrain board size
-- [ ] Handle left-right inputs
 - [ ] Allow tetrominos to rotate
 - [ ] Allow clearing lines
-- [ ] Generate/Preview random blocks
+- [ ] Speed up pieces falling as more lines are cleared
+- [ ] Preview blocks
+- [ ] Handle pause
 - [ ] Handle scoring
+- [ ] Handle quick fall
 

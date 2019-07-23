@@ -8,6 +8,12 @@ enum GamePhase {
     GameOver,
 }
 
+enum Bound {
+    Floor(i32),
+    LeftWall(i32),
+    RightWall(i32),
+}
+
 pub struct GameState<TBlockTypeRand, TBlockPosRand>
 where
     TBlockTypeRand: RangeRng<usize>,
@@ -82,6 +88,18 @@ where
         }
     }
 
+    pub fn move_block_horizontal(&mut self, horizontal_motion: i32) {
+        match self.game_phase {
+            GamePhase::MoveBlock => {
+                let moving_block_id = self.block_count - 1; // we are always moving the last block
+                if self.can_block_move(moving_block_id, horizontal_motion) {
+                    self.block_positions[moving_block_id].1 += horizontal_motion;
+                }
+            },
+            GamePhase::GenerateBlock | GamePhase::GameOver => (),
+        }
+    }
+
     pub fn block_count(&self) -> usize {
         self.block_count
     }
@@ -97,15 +115,36 @@ where
     pub fn has_block_landed(&self, block_id: usize) -> bool {
         assert_eq!(self.blocks.len(), self.block_positions.len());
 
-        is_resting_on_floor(
+        is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
-            self.board_height,
-        ) || is_resting_on_other_block(
+            Bound::Floor(self.board_height),
+        ) || is_touching_block(
             block_id,
             self.block_count,
             &self.blocks,
             &self.block_positions,
+            (1, 0),
+        )
+    }
+
+    pub fn can_block_move(&self, block_id: usize, horizontal_motion: i32) -> bool {
+        assert_eq!(self.blocks.len(), self.block_positions.len());
+
+        if horizontal_motion == 0 {
+            return false;
+        }
+
+        !is_touching_bound(
+            self.blocks[block_id],
+            self.block_positions[block_id],
+            if horizontal_motion < 0 { Bound::LeftWall(0) } else { Bound::RightWall(self.board_width) },
+        ) && !is_touching_block(
+            block_id,
+            self.block_count,
+            &self.blocks,
+            &self.block_positions,
+            (0, horizontal_motion),
         )
     }
 
@@ -124,22 +163,29 @@ fn translate_cells(cells: &[Cell; 4], row_translation: i32, col_translation: i32
     translated_cells
 }
 
-fn is_resting_on_floor(block: BlockType, block_pos: Cell, floor_pos: i32) -> bool {
-    block_pos.0 + block.height() >= floor_pos
+fn is_touching_bound(block: BlockType, block_pos: Cell, bound: Bound) -> bool {
+    match bound {
+        Bound::Floor(floor) => block_pos.0 + block.height() >= floor,
+        Bound::LeftWall(left) => block_pos.1 <= left,
+        Bound::RightWall(right) => block_pos.1 + block.width() >= right,
+    }
 }
 
-fn is_resting_on_other_block(
+fn is_touching_block(
     block_id: usize,
     block_count: usize,
     blocks: &[BlockType],
     block_positions: &[Cell],
+    touch_vector: (i32, i32)
 ) -> bool {
     assert_eq!(blocks.len(), block_positions.len());
     assert!(blocks.len() >= block_count);
 
-    let block = blocks[block_id];
-    let block_pos = block_positions[block_id];
-    let block_cells = translate_cells(&block.cells(), block_pos.0, block_pos.1);
+    let block_cells = translate_cells(
+        &blocks[block_id].cells(),
+        block_positions[block_id].0 + touch_vector.0,
+        block_positions[block_id].1 + touch_vector.1,
+    );
 
     // Only need to check for collisions against blocks that were created before this block id
     // since all other blocks will always be higher up in the grid.
@@ -148,14 +194,15 @@ fn is_resting_on_other_block(
             continue;
         }
 
-        let other_block = blocks[other_block_id];
-        let other_block_pos = block_positions[other_block_id];
-        let other_block_cells =
-            translate_cells(&other_block.cells(), other_block_pos.0, other_block_pos.1);
+        let other_block_cells = translate_cells(
+            &blocks[other_block_id].cells(),
+            block_positions[other_block_id].0,
+            block_positions[other_block_id].1,
+        );
 
         for cell in block_cells.iter() {
             for other_cell in other_block_cells.iter() {
-                if (cell.1 == other_cell.1) && (cell.0 + 1 == other_cell.0) {
+                if cell == other_cell {
                     return true;
                 }
             }

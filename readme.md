@@ -55,7 +55,7 @@
 ![Image of unit tests passing](demo/6-test.png)
 
 - [X] [Handle game lose state](https://github.com/scottnm/tetrust/commit/b72efb7eb834d442885c35f5cbb8173c2b1ba887)
-- [X] [Handle left-right inputs](https://github.com/scottnm/tetrust/commit/b72efb7eb834d442885c35f5cbb8173c2b1ba887)
+- [X] [Handle left-right inputs](https://github.com/scottnm/tetrust/commit/a819261fdfd041bd8fbcc280d9661e78f355bdcd)
 
 ![Image of left-right collision](demo/7-lr-collision.gif)
 

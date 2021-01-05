@@ -19,6 +19,8 @@ where
     TBlockTypeRand: RangeRng<usize>,
     TBlockPosRand: RangeRng<i32>,
 {
+    board_pos_x: i32,
+    board_pos_y: i32,
     board_width: i32,
     board_height: i32,
     block_type_rng: TBlockTypeRand,
@@ -35,6 +37,8 @@ where
     TBlockPosRand: RangeRng<i32>,
 {
     pub fn new(
+        board_pos_x: i32,
+        board_pos_y: i32,
         board_width: i32,
         board_height: i32,
         block_type_rng: TBlockTypeRand,
@@ -42,10 +46,12 @@ where
     ) -> GameState<TBlockTypeRand, TBlockPosRand> {
         let max_blocks = (board_width * board_height) as usize;
         GameState {
-            board_width: board_width,
-            board_height: board_height,
-            block_type_rng: block_type_rng,
-            block_pos_rng: block_pos_rng,
+            board_pos_x,
+            board_pos_y,
+            board_width,
+            board_height,
+            block_type_rng,
+            block_pos_rng,
             block_count: 0,
             blocks: (vec![BlockType::I; max_blocks]).into_boxed_slice(),
             block_positions: (vec![Cell(0, 0); max_blocks]).into_boxed_slice(),
@@ -60,12 +66,14 @@ where
                 assert!(self.block_count < self.blocks.len());
 
                 let new_block = BlockType::random(&mut self.block_type_rng);
-                let start_col: i32 = self
-                    .block_pos_rng
-                    .gen_range(0, self.board_width - new_block.width());
+                let start_col: i32 = self.block_pos_rng.gen_range(
+                    self.board_pos_x,
+                    self.board_pos_x + self.board_width - new_block.width(),
+                );
 
                 self.blocks[self.block_count] = new_block;
-                self.block_positions[self.block_count] = Cell(-new_block.height(), start_col);
+                self.block_positions[self.block_count] =
+                    Cell(self.board_pos_y - new_block.height(), start_col);
                 self.block_count += 1;
                 self.game_phase = GamePhase::MoveBlock;
             }
@@ -74,7 +82,8 @@ where
                 let moving_block_id = self.block_count - 1; // we are always moving the last block
 
                 if self.has_block_landed(moving_block_id) {
-                    self.game_phase = if self.block_positions[moving_block_id].0 < 0 {
+                    self.game_phase = if self.block_positions[moving_block_id].0 < self.board_pos_y
+                    {
                         GamePhase::GameOver
                     } else {
                         GamePhase::GenerateBlock
@@ -95,7 +104,7 @@ where
                 if self.can_block_move(moving_block_id, horizontal_motion) {
                     self.block_positions[moving_block_id].1 += horizontal_motion;
                 }
-            },
+            }
             GamePhase::GenerateBlock | GamePhase::GameOver => (),
         }
     }
@@ -118,7 +127,7 @@ where
         is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
-            Bound::Floor(self.board_height),
+            Bound::Floor(self.board_height + self.board_pos_y),
         ) || is_touching_block(
             block_id,
             self.block_count,
@@ -138,7 +147,11 @@ where
         !is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
-            if horizontal_motion < 0 { Bound::LeftWall(0) } else { Bound::RightWall(self.board_width) },
+            if horizontal_motion < 0 {
+                Bound::LeftWall(self.board_pos_x)
+            } else {
+                Bound::RightWall(self.board_pos_x + self.board_width)
+            },
         ) && !is_touching_block(
             block_id,
             self.block_count,
@@ -176,7 +189,7 @@ fn is_touching_block(
     block_count: usize,
     blocks: &[BlockType],
     block_positions: &[Cell],
-    touch_vector: (i32, i32)
+    touch_vector: (i32, i32),
 ) -> bool {
     assert_eq!(blocks.len(), block_positions.len());
     assert!(blocks.len() >= block_count);

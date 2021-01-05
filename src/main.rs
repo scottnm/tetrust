@@ -33,6 +33,11 @@ fn setup_colors() {
 fn main() {
     let window = pancurses::initscr();
 
+    const BOARD_X_OFFSET: i32 = 10;
+    const BOARD_Y_OFFSET: i32 = 10;
+    const BOARD_DIM_WIDTH: i32 = 10;
+    const BOARD_DIM_HEIGHT: i32 = 20;
+
     const INPUT_POLL_PERIOD: time::Duration = time::Duration::from_millis(125);
     const DEFAULT_GAME_TICK_PERIOD: time::Duration = time::Duration::from_millis(250);
     let mut game_tick_period = DEFAULT_GAME_TICK_PERIOD;
@@ -47,8 +52,10 @@ fn main() {
     let mut last_input_handled = time::Instant::now();
 
     let mut game_state = GameState::new(
-        window.get_max_x(),
-        window.get_max_y(),
+        BOARD_X_OFFSET,
+        BOARD_Y_OFFSET,
+        BOARD_DIM_WIDTH,
+        BOARD_DIM_HEIGHT,
         ThreadRangeRng::new(),
         ThreadRangeRng::new(),
     );
@@ -93,6 +100,7 @@ fn main() {
 
         // Render the frame
         window.erase();
+        // draw_frame(&window);
         for block_id in 0..game_state.block_count() {
             let (position, block) = game_state.block(block_id);
             render_block(&window, position, block);

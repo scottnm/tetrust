@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
+    use crate::block::*;
     use crate::game::*;
     use crate::randwrapper::*;
-    use crate::block::*;
 
     #[allow(dead_code)] // ignore dead code because this is primarily used for debugging tests
     fn log_blocks<T, U>(game: &GameState<T, U>)
@@ -73,6 +73,8 @@ mod tests {
         // ticks will not change the game state.
 
         let mut game_state = GameState::new(
+            0,
+            0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             ThreadRangeRng::new(),
@@ -95,6 +97,8 @@ mod tests {
         // This test verifies that a game over only happens a block exceeds the board
 
         let mut game_state = GameState::new(
+            0,
+            0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             ThreadRangeRng::new(),
@@ -111,6 +115,8 @@ mod tests {
         // This test generates only 'I' pieces on the far-left column of the board and verifies the
         // number of pieces it takes to fill up the board
         let mut game_state = GameState::new(
+            0,
+            0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             mocks::SingleValueRangeRng::new(BlockType::I as usize),
@@ -146,7 +152,9 @@ mod tests {
         T: RangeRng<usize>,
         U: RangeRng<i32>,
     {
-        TEST_BOARD_WIDTH - last_block(game_state).1.width() - last_block_distance_to_left_wall(game_state)
+        TEST_BOARD_WIDTH
+            - last_block(game_state).1.width()
+            - last_block_distance_to_left_wall(game_state)
     }
 
     fn fall_block<T, U>(game_state: &mut GameState<T, U>)
@@ -163,6 +171,8 @@ mod tests {
     #[test]
     fn test_lr_collisions() {
         let mut game_state = GameState::new(
+            0,
+            0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             mocks::SingleValueRangeRng::new(BlockType::S as usize),
@@ -177,7 +187,10 @@ mod tests {
         let distance_to_left_wall = last_block_distance_to_left_wall(&game_state);
         for _ in 0..distance_to_left_wall {
             game_state.move_block_horizontal(-1);
-            assert_ne!(distance_to_left_wall, last_block_distance_to_left_wall(&game_state));
+            assert_ne!(
+                distance_to_left_wall,
+                last_block_distance_to_left_wall(&game_state)
+            );
         }
 
         // verify that once a block collides with the left wall it can't move left any further but
@@ -194,7 +207,10 @@ mod tests {
         let distance_to_right_wall = last_block_distance_to_right_wall(&game_state);
         for _ in 0..distance_to_right_wall {
             game_state.move_block_horizontal(1);
-            assert_ne!(distance_to_left_wall, last_block_distance_to_right_wall(&game_state));
+            assert_ne!(
+                distance_to_left_wall,
+                last_block_distance_to_right_wall(&game_state)
+            );
         }
         // verify that once a block collides with the right wall it can't move right any further
         // but it can move left
@@ -237,12 +253,18 @@ mod tests {
         for _ in 0..TEST_BOARD_HEIGHT - 1 {
             game_state.tick();
         }
-        assert_eq!((last_block(&game_state).0).0, TEST_BOARD_HEIGHT - 1 - last_block(&game_state).1.height());
+        assert_eq!(
+            (last_block(&game_state).0).0,
+            TEST_BOARD_HEIGHT - 1 - last_block(&game_state).1.height()
+        );
 
         // can't move the last block to the left because of collision
         let left_wall_distance_before = last_block_distance_to_left_wall(&game_state);
         game_state.move_block_horizontal(-1);
-        assert_eq!(last_block_distance_to_left_wall(&game_state), left_wall_distance_before);
+        assert_eq!(
+            last_block_distance_to_left_wall(&game_state),
+            left_wall_distance_before
+        );
 
         // drop the last block 1 more time so it is touching the bottom
         //      xx  |
@@ -252,7 +274,10 @@ mod tests {
         //      xx $$
         //     xx $$
         game_state.tick();
-        assert_eq!((last_block(&game_state).0).0, TEST_BOARD_HEIGHT - last_block(&game_state).1.height());
+        assert_eq!(
+            (last_block(&game_state).0).0,
+            TEST_BOARD_HEIGHT - last_block(&game_state).1.height()
+        );
 
         // the last block can now move left
         //      xx
@@ -262,7 +287,10 @@ mod tests {
         //      xx$$ <=
         //     xx$$  <=
         game_state.move_block_horizontal(-1);
-        assert_eq!(last_block_distance_to_left_wall(&game_state), left_wall_distance_before - 1);
+        assert_eq!(
+            last_block_distance_to_left_wall(&game_state),
+            left_wall_distance_before - 1
+        );
         while !game_state.is_game_over() {
             game_state.tick();
         }

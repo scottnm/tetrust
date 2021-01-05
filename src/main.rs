@@ -55,6 +55,13 @@ fn draw_frame(window: &pancurses::Window, left: i32, width: i32, top: i32, heigh
     }
 }
 
+fn draw_text_centered<S>(window: &pancurses::Window, text: S, x_center: i32, y_center: i32)
+where
+    S: AsRef<str>,
+{
+    window.mvaddstr(y_center, x_center - (text.as_ref().len() / 2) as i32, text);
+}
+
 fn main() {
     let window = pancurses::initscr();
 
@@ -86,8 +93,9 @@ fn main() {
     );
 
     let mut inputs = (false, false);
+    let mut game_over_blit_timer = Option::<time::Instant>::None;
 
-    while !game_state.is_game_over() {
+    loop {
         // Input handling
         if let Some(pancurses::Input::Character(ch)) = window.getch() {
             match ch {
@@ -138,6 +146,31 @@ fn main() {
             let (position, block) = game_state.block(block_id);
             render_block(&window, position, block);
         }
+
+        if game_state.is_game_over() {
+            const GAME_OVER_DURATION: time::Duration = time::Duration::from_secs(3);
+            match game_over_blit_timer {
+                None => game_over_blit_timer = Some(time::Instant::now()),
+                Some(timer) => {
+                    if timer.elapsed() > GAME_OVER_DURATION {
+                        break;
+                    }
+                }
+            }
+
+            const GAME_OVER_TEXT_X_CENTER: i32 = BOARD_X_OFFSET + BOARD_DIM_WIDTH / 2;
+            const GAME_OVER_TEXT_Y_CENTER: i32 = BOARD_Y_OFFSET + BOARD_DIM_HEIGHT / 2;
+
+            window.attron(pancurses::A_BLINK);
+            draw_text_centered(
+                &window,
+                "Game Over",
+                GAME_OVER_TEXT_X_CENTER,
+                GAME_OVER_TEXT_Y_CENTER,
+            );
+            window.attroff(pancurses::A_BLINK);
+        }
+
         window.refresh();
     }
 

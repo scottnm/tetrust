@@ -61,6 +61,7 @@ where
 
     pub fn tick(&mut self) {
         match self.game_phase {
+            // Add a new block to the top of the board
             GamePhase::GenerateBlock => {
                 assert_eq!(self.blocks.len(), self.block_positions.len());
                 assert!(self.block_count < self.blocks.len());
@@ -70,20 +71,22 @@ where
                     self.board_pos_x,
                     self.board_pos_x + self.board_width - new_block.width(),
                 );
+                let start_row: i32 = self.board_pos_y - new_block.height();
 
                 self.blocks[self.block_count] = new_block;
-                self.block_positions[self.block_count] =
-                    Cell(self.board_pos_y - new_block.height(), start_col);
+                self.block_positions[self.block_count] = Cell(start_row, start_col);
                 self.block_count += 1;
                 self.game_phase = GamePhase::MoveBlock;
             }
 
+            // Move the latest block down across the board
             GamePhase::MoveBlock => {
-                let moving_block_id = self.block_count - 1; // we are always moving the last block
+                // we are always moving the last block
+                let moving_block_id = self.block_count - 1;
 
                 if self.has_block_landed(moving_block_id) {
-                    self.game_phase = if self.block_positions[moving_block_id].0 < self.board_pos_y
-                    {
+                    let is_block_oob = self.block_positions[moving_block_id].0 < self.board_pos_y;
+                    self.game_phase = if is_block_oob {
                         GamePhase::GameOver
                     } else {
                         GamePhase::GenerateBlock
@@ -93,6 +96,7 @@ where
                 }
             }
 
+            // The game is over; NOOP
             GamePhase::GameOver => (),
         }
     }
@@ -124,17 +128,25 @@ where
     pub fn has_block_landed(&self, block_id: usize) -> bool {
         assert_eq!(self.blocks.len(), self.block_positions.len());
 
-        is_touching_bound(
+        let is_touching_floor = is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
             Bound::Floor(self.board_height + self.board_pos_y),
-        ) || is_touching_block(
+        );
+
+        if is_touching_floor {
+            return true;
+        }
+
+        let is_touching_block_below = is_touching_block(
             block_id,
             self.block_count,
             &self.blocks,
             &self.block_positions,
             (1, 0),
-        )
+        );
+
+        is_touching_block_below
     }
 
     pub fn can_block_move(&self, block_id: usize, horizontal_motion: i32) -> bool {
@@ -144,21 +156,31 @@ where
             return false;
         }
 
-        !is_touching_bound(
+        let wall_to_check = if horizontal_motion < 0 {
+            Bound::LeftWall(self.board_pos_x)
+        } else {
+            Bound::RightWall(self.board_pos_x + self.board_width)
+        };
+
+        let is_touching_wall = is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
-            if horizontal_motion < 0 {
-                Bound::LeftWall(self.board_pos_x)
-            } else {
-                Bound::RightWall(self.board_pos_x + self.board_width)
-            },
-        ) && !is_touching_block(
+            wall_to_check,
+        );
+
+        if is_touching_wall {
+            return false;
+        }
+
+        let is_touching_block_side = is_touching_block(
             block_id,
             self.block_count,
             &self.blocks,
             &self.block_positions,
             (0, horizontal_motion),
-        )
+        );
+
+        !is_touching_block_side
     }
 
     pub fn is_game_over(&self) -> bool {

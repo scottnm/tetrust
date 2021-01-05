@@ -30,6 +30,31 @@ fn setup_colors() {
     }
 }
 
+fn draw_frame(window: &pancurses::Window, left: i32, width: i32, top: i32, height: i32) {
+    let right = left + width;
+    let bottom = top + height;
+    assert!(left < right);
+    assert!(top < bottom);
+
+    // draw corners
+    window.mvaddch(top, left, pancurses::ACS_ULCORNER());
+    window.mvaddch(top, right, pancurses::ACS_URCORNER());
+    window.mvaddch(bottom, left, pancurses::ACS_LLCORNER());
+    window.mvaddch(bottom, right, pancurses::ACS_LRCORNER());
+
+    // draw horizontal borders
+    for col in left + 1..right {
+        window.mvaddch(top, col, pancurses::ACS_HLINE());
+        window.mvaddch(bottom, col, pancurses::ACS_HLINE());
+    }
+
+    // draw vertical borders
+    for row in top + 1..bottom {
+        window.mvaddch(row, left, pancurses::ACS_VLINE());
+        window.mvaddch(row, right, pancurses::ACS_VLINE());
+    }
+}
+
 fn main() {
     let window = pancurses::initscr();
 
@@ -100,7 +125,15 @@ fn main() {
 
         // Render the frame
         window.erase();
-        // draw_frame(&window);
+
+        draw_frame(
+            &window,
+            BOARD_X_OFFSET - 1,
+            BOARD_DIM_WIDTH + 1,
+            BOARD_Y_OFFSET - 1,
+            BOARD_DIM_HEIGHT + 1,
+        );
+
         for block_id in 0..game_state.block_count() {
             let (position, block) = game_state.block(block_id);
             render_block(&window, position, block);

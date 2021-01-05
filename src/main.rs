@@ -31,8 +31,8 @@ fn setup_colors() {
 }
 
 fn draw_frame(window: &pancurses::Window, left: i32, width: i32, top: i32, height: i32) {
-    let right = left + width;
-    let bottom = top + height;
+    let right = left + width - 1;
+    let bottom = top + height - 1;
     assert!(left < right);
     assert!(top < bottom);
 
@@ -58,8 +58,8 @@ fn draw_frame(window: &pancurses::Window, left: i32, width: i32, top: i32, heigh
 fn main() {
     let window = pancurses::initscr();
 
-    const BOARD_X_OFFSET: i32 = 10;
-    const BOARD_Y_OFFSET: i32 = 10;
+    const BOARD_X_OFFSET: i32 = 1;
+    const BOARD_Y_OFFSET: i32 = 1;
     const BOARD_DIM_WIDTH: i32 = 10;
     const BOARD_DIM_HEIGHT: i32 = 20;
 
@@ -129,9 +129,9 @@ fn main() {
         draw_frame(
             &window,
             BOARD_X_OFFSET - 1,
-            BOARD_DIM_WIDTH + 1,
+            BOARD_DIM_WIDTH + 2,
             BOARD_Y_OFFSET - 1,
-            BOARD_DIM_HEIGHT + 1,
+            BOARD_DIM_HEIGHT + 2,
         );
 
         for block_id in 0..game_state.block_count() {

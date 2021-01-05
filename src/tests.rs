@@ -144,7 +144,9 @@ mod tests {
         T: RangeRng<usize>,
         U: RangeRng<i32>,
     {
-        (last_block(game_state).0).1
+        let last_block_pos = last_block(game_state).0;
+        let last_block_x_pos = last_block_pos.1;
+        last_block_x_pos
     }
 
     fn last_block_distance_to_right_wall<T, U>(game_state: &GameState<T, U>) -> i32
@@ -152,9 +154,12 @@ mod tests {
         T: RangeRng<usize>,
         U: RangeRng<i32>,
     {
-        TEST_BOARD_WIDTH
-            - last_block(game_state).1.width()
-            - last_block_distance_to_left_wall(game_state)
+        let last_block_width = last_block(game_state).1.width();
+        let last_block_pos = last_block(game_state).0;
+        let last_block_x_pos = last_block_pos.1;
+        let last_block_rightmost_cell = last_block_x_pos + last_block_width - 1;
+
+        (TEST_BOARD_WIDTH - 1) - last_block_rightmost_cell
     }
 
     fn fall_block<T, U>(game_state: &mut GameState<T, U>)

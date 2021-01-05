@@ -131,7 +131,7 @@ where
         let is_touching_floor = is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
-            Bound::Floor(self.board_height + self.board_pos_y),
+            Bound::Floor(self.board_pos_y + self.board_height),
         );
 
         if is_touching_floor {
@@ -157,7 +157,7 @@ where
         }
 
         let wall_to_check = if horizontal_motion < 0 {
-            Bound::LeftWall(self.board_pos_x)
+            Bound::LeftWall(self.board_pos_x - 1)
         } else {
             Bound::RightWall(self.board_pos_x + self.board_width)
         };
@@ -201,7 +201,7 @@ fn translate_cells(cells: &[Cell; 4], row_translation: i32, col_translation: i32
 fn is_touching_bound(block: BlockType, block_pos: Cell, bound: Bound) -> bool {
     match bound {
         Bound::Floor(floor) => block_pos.0 + block.height() >= floor,
-        Bound::LeftWall(left) => block_pos.1 <= left,
+        Bound::LeftWall(left) => block_pos.1 <= left + 1,
         Bound::RightWall(right) => block_pos.1 + block.width() >= right,
     }
 }

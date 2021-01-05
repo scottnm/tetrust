@@ -64,10 +64,10 @@ fn main() {
                 'd' => inputs.1 = true, // move right
 
                 // debug
-                'q' => break, // kill game early
-                'z' => game_tick_period *= 2, // slowdown tick rate
+                'q' => break,                                       // kill game early
+                'z' => game_tick_period *= 2,                       // slowdown tick rate
                 'x' => game_tick_period = DEFAULT_GAME_TICK_PERIOD, // reset tick rate
-                'c' => game_tick_period /= 2, // speed up tick rate
+                'c' => game_tick_period /= 2,                       // speed up tick rate
                 _ => (),
             }
         }

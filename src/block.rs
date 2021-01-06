@@ -13,13 +13,16 @@ pub enum BlockType {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Cell(pub i32, pub i32);
+pub struct Cell {
+    pub x: i32,
+    pub y: i32,
+}
 
 macro_rules! cell_array {
     ( $(($x:expr,$y:expr)),* $(,)?) => {
         [
             $(
-                Cell($x,$y),
+                Cell{x: $x, y: $y},
             )*
         ]
     };
@@ -64,66 +67,56 @@ impl BlockType {
         }
     }
 
-    #[rustfmt::skip] // skip rust formatting so that my block declarations can look pleasant
     pub fn cells(&self) -> [Cell; 4] {
         match *self {
-            BlockType::I =>
-                cell_array![
-                    (0, 0),
-                    (1, 0),
-                    (2, 0),
-                    (3, 0),
-                ],
+            // - - - -
+            // 0 1 2 3
+            // - - - -
+            // - - - -
+            BlockType::I => cell_array![(0, 1), (1, 1), (2, 1), (3, 1),],
 
-            BlockType::O =>
-                cell_array![
-                    (0, 0), (0, 1),
-                    (1, 0), (1, 1),
-                ],
+            // - 0 1 -
+            // - 2 3 -
+            // - - - -
+            // - - - -
+            BlockType::O => cell_array![(1, 0), (2, 0), (1, 1), (2, 1),],
 
-            BlockType::T =>
-                cell_array![
-                    (0, 0), (0, 1), (0, 2),
-                            (1, 1),
-                ],
+            // - 0 -
+            // 1 2 3
+            // - - -
+            BlockType::T => cell_array![(1, 0), (0, 1), (1, 1), (2, 1),],
 
-            BlockType::S =>
-                cell_array![
-                            (0, 1), (0, 2),
-                    (1, 0), (1, 1),
-                ],
+            // - 0 1
+            // 2 3 -
+            // - - -
+            BlockType::S => cell_array![(1, 0), (2, 0), (0, 1), (1, 1),],
 
-            BlockType::Z =>
-                cell_array![
-                    (0, 0), (0, 1),
-                            (1, 1), (1, 2),
-                ],
+            // 0 1 -
+            // - 2 3
+            // - - -
+            BlockType::Z => cell_array![(0, 0), (1, 0), (1, 1), (2, 1),],
 
-            BlockType::J =>
-                cell_array![
-                            (0, 1),
-                            (1, 1),
-                    (2, 0), (2, 1),
-                ],
+            // 0 - -
+            // 1 2 3
+            // - - -
+            BlockType::J => cell_array![(0, 0), (0, 1), (1, 1), (2, 1),],
 
-            BlockType::L =>
-                cell_array![
-                    (0, 0),
-                    (1, 0),
-                    (2, 0), (2, 1),
-                ],
+            // - - 0
+            // 1 2 3
+            // - - -
+            BlockType::L => cell_array![(2, 0), (0, 1), (1, 1), (2, 1),],
         }
     }
 
     pub fn width(&self) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        self.cells().iter().max_by_key(|cell| cell.1).unwrap().1 + 1
+        self.cells().iter().max_by_key(|cell| cell.x).unwrap().x + 1
     }
 
     pub fn height(&self) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        self.cells().iter().max_by_key(|cell| cell.0).unwrap().0 + 1
+        self.cells().iter().max_by_key(|cell| cell.y).unwrap().y + 1
     }
 }

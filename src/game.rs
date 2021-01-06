@@ -2,6 +2,12 @@ use crate::block::*;
 use crate::randwrapper::*;
 
 #[derive(PartialEq, Eq)]
+struct Vec2 {
+    x: i32,
+    y: i32,
+}
+
+#[derive(PartialEq, Eq)]
 enum GamePhase {
     GenerateBlock,
     MoveBlock,
@@ -54,7 +60,7 @@ where
             block_pos_rng,
             block_count: 0,
             blocks: (vec![BlockType::I; max_blocks]).into_boxed_slice(),
-            block_positions: (vec![Cell(0, 0); max_blocks]).into_boxed_slice(),
+            block_positions: (vec![Cell { x: 0, y: 0 }; max_blocks]).into_boxed_slice(),
             game_phase: GamePhase::GenerateBlock,
         }
     }
@@ -73,8 +79,13 @@ where
                 );
                 let start_row: i32 = self.board_pos_y - new_block.height();
 
+                let start_pos = Cell {
+                    x: start_col,
+                    y: start_row,
+                };
+
                 self.blocks[self.block_count] = new_block;
-                self.block_positions[self.block_count] = Cell(start_row, start_col);
+                self.block_positions[self.block_count] = start_pos;
                 self.block_count += 1;
                 self.game_phase = GamePhase::MoveBlock;
             }
@@ -85,14 +96,14 @@ where
                 let moving_block_id = self.block_count - 1;
 
                 if self.has_block_landed(moving_block_id) {
-                    let is_block_oob = self.block_positions[moving_block_id].0 < self.board_pos_y;
+                    let is_block_oob = self.block_positions[moving_block_id].y < self.board_pos_y;
                     self.game_phase = if is_block_oob {
                         GamePhase::GameOver
                     } else {
                         GamePhase::GenerateBlock
                     }
                 } else {
-                    self.block_positions[moving_block_id].0 += 1;
+                    self.block_positions[moving_block_id].y += 1;
                 }
             }
 
@@ -106,7 +117,7 @@ where
             GamePhase::MoveBlock => {
                 let moving_block_id = self.block_count - 1; // we are always moving the last block
                 if self.can_block_move(moving_block_id, horizontal_motion) {
-                    self.block_positions[moving_block_id].1 += horizontal_motion;
+                    self.block_positions[moving_block_id].x += horizontal_motion;
                 }
             }
             GamePhase::GenerateBlock | GamePhase::GameOver => (),
@@ -143,7 +154,7 @@ where
             self.block_count,
             &self.blocks,
             &self.block_positions,
-            (1, 0),
+            Vec2 { x: 0, y: 1 },
         );
 
         is_touching_block_below
@@ -172,12 +183,17 @@ where
             return false;
         }
 
+        let motion_vec = Vec2 {
+            x: horizontal_motion,
+            y: 0,
+        };
+
         let is_touching_block_side = is_touching_block(
             block_id,
             self.block_count,
             &self.blocks,
             &self.block_positions,
-            (0, horizontal_motion),
+            motion_vec,
         );
 
         !is_touching_block_side
@@ -191,8 +207,8 @@ where
 fn translate_cells(cells: &[Cell; 4], row_translation: i32, col_translation: i32) -> [Cell; 4] {
     let mut translated_cells: [Cell; 4] = *cells;
     for cell_index in 0..translated_cells.len() {
-        translated_cells[cell_index].0 += row_translation;
-        translated_cells[cell_index].1 += col_translation;
+        translated_cells[cell_index].y += row_translation;
+        translated_cells[cell_index].x += col_translation;
     }
 
     translated_cells
@@ -200,9 +216,9 @@ fn translate_cells(cells: &[Cell; 4], row_translation: i32, col_translation: i32
 
 fn is_touching_bound(block: BlockType, block_pos: Cell, bound: Bound) -> bool {
     match bound {
-        Bound::Floor(floor) => block_pos.0 + block.height() >= floor,
-        Bound::LeftWall(left) => block_pos.1 <= left + 1,
-        Bound::RightWall(right) => block_pos.1 + block.width() >= right,
+        Bound::Floor(floor) => block_pos.y + block.height() >= floor,
+        Bound::LeftWall(left) => block_pos.x <= left + 1,
+        Bound::RightWall(right) => block_pos.x + block.width() >= right,
     }
 }
 
@@ -211,15 +227,15 @@ fn is_touching_block(
     block_count: usize,
     blocks: &[BlockType],
     block_positions: &[Cell],
-    touch_vector: (i32, i32),
+    touch_vector: Vec2,
 ) -> bool {
     assert_eq!(blocks.len(), block_positions.len());
     assert!(blocks.len() >= block_count);
 
     let block_cells = translate_cells(
         &blocks[block_id].cells(),
-        block_positions[block_id].0 + touch_vector.0,
-        block_positions[block_id].1 + touch_vector.1,
+        block_positions[block_id].y + touch_vector.y,
+        block_positions[block_id].x + touch_vector.x,
     );
 
     // Only need to check for collisions against blocks that were created before this block id
@@ -231,8 +247,8 @@ fn is_touching_block(
 
         let other_block_cells = translate_cells(
             &blocks[other_block_id].cells(),
-            block_positions[other_block_id].0,
-            block_positions[other_block_id].1,
+            block_positions[other_block_id].y,
+            block_positions[other_block_id].x,
         );
 
         for cell in block_cells.iter() {

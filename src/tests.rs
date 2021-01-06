@@ -22,7 +22,7 @@ mod tests {
         U: RangeRng<i32>,
     {
         let block_pos = game.block(block_id).0;
-        game.has_block_landed(block_id) && block_pos.0 < 0
+        game.has_block_landed(block_id) && block_pos.y < 0
     }
 
     fn has_any_block_landed_oob<T, U>(game: &GameState<T, U>) -> bool
@@ -44,7 +44,7 @@ mod tests {
     const TEST_BOARD_WIDTH: i32 = 20;
     const TEST_BOARD_HEIGHT: i32 = 30;
 
-    fn gen_wrapper<T: PartialOrd>(rng: &mut RangeRng<T>, lower: T, upper: T) -> T {
+    fn gen_wrapper<T: PartialOrd>(rng: &mut dyn RangeRng<T>, lower: T, upper: T) -> T {
         rng.gen_range(lower, upper)
     }
 
@@ -119,13 +119,15 @@ mod tests {
             0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
-            mocks::SingleValueRangeRng::new(BlockType::I as usize),
+            mocks::SingleValueRangeRng::new(BlockType::O as usize),
             mocks::SingleValueRangeRng::new(0 as i32),
         );
         while !game_state.is_game_over() {
             game_state.tick();
         }
-        const FINAL_BLOCK_COUNT: usize = (TEST_BOARD_HEIGHT as usize / 4) + 1;
+
+        // each 'O' piece will start horizontal and they all will perfectly stack
+        const FINAL_BLOCK_COUNT: usize = (TEST_BOARD_HEIGHT as usize / 2) + 1;
         const FINAL_BLOCK_ID: usize = FINAL_BLOCK_COUNT - 1;
         assert_eq!(game_state.block_count(), FINAL_BLOCK_COUNT);
         assert!(has_block_landed_oob(&game_state, FINAL_BLOCK_ID));
@@ -145,8 +147,7 @@ mod tests {
         U: RangeRng<i32>,
     {
         let last_block_pos = last_block(game_state).0;
-        let last_block_x_pos = last_block_pos.1;
-        last_block_x_pos
+        last_block_pos.x
     }
 
     fn last_block_distance_to_right_wall<T, U>(game_state: &GameState<T, U>) -> i32
@@ -156,8 +157,7 @@ mod tests {
     {
         let last_block_width = last_block(game_state).1.width();
         let last_block_pos = last_block(game_state).0;
-        let last_block_x_pos = last_block_pos.1;
-        let last_block_rightmost_cell = last_block_x_pos + last_block_width - 1;
+        let last_block_rightmost_cell = last_block_pos.x + last_block_width - 1;
 
         (TEST_BOARD_WIDTH - 1) - last_block_rightmost_cell
     }
@@ -259,7 +259,7 @@ mod tests {
             game_state.tick();
         }
         assert_eq!(
-            (last_block(&game_state).0).0,
+            (last_block(&game_state).0).y,
             TEST_BOARD_HEIGHT - 1 - last_block(&game_state).1.height()
         );
 
@@ -280,7 +280,7 @@ mod tests {
         //     xx $$
         game_state.tick();
         assert_eq!(
-            (last_block(&game_state).0).0,
+            (last_block(&game_state).0).y,
             TEST_BOARD_HEIGHT - last_block(&game_state).1.height()
         );
 

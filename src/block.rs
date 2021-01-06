@@ -2,10 +2,10 @@ use crate::randwrapper::*;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Rotation {
+    Rot0,
     Rot1,
     Rot2,
     Rot3,
-    Rot4,
 }
 
 // TODO (scottnm): separate out blocktype into blocktype and blockvisuals and blockdata (orientation+cells)
@@ -70,16 +70,16 @@ impl Rotation {
         match rotation_direction {
             RotationDirection::None => *self,
             RotationDirection::Left => match self {
-                Rotation::Rot1 => Rotation::Rot4,
+                Rotation::Rot0 => Rotation::Rot3,
+                Rotation::Rot1 => Rotation::Rot0,
                 Rotation::Rot2 => Rotation::Rot1,
                 Rotation::Rot3 => Rotation::Rot2,
-                Rotation::Rot4 => Rotation::Rot3,
             },
             RotationDirection::Right => match self {
+                Rotation::Rot0 => Rotation::Rot1,
                 Rotation::Rot1 => Rotation::Rot2,
                 Rotation::Rot2 => Rotation::Rot3,
-                Rotation::Rot3 => Rotation::Rot4,
-                Rotation::Rot4 => Rotation::Rot1,
+                Rotation::Rot3 => Rotation::Rot0,
             },
         }
     }
@@ -114,14 +114,14 @@ impl BlockType {
 impl Block {
     pub fn default() -> Self {
         Block {
-            rot: Rotation::Rot1,
+            rot: Rotation::Rot0,
             block_type: BlockType::I,
         }
     }
 
     pub fn random<T: RangeRng<usize>>(rng: &mut T) -> Self {
         Block {
-            rot: Rotation::Rot1,
+            rot: Rotation::Rot0,
             block_type: BLOCKTYPES[rng.gen_range(1, BLOCKTYPES.len() + 1) - 1],
         }
     }
@@ -138,10 +138,10 @@ impl Block {
             // - - - -    - - 2 -    0 1 2 3    - 2 - -
             // - - - -    - - 3 -    - - - -    - 3 - -
             BlockType::I => match rot {
-                Rotation::Rot1 => cell_array![(0, 1), (1, 1), (2, 1), (3, 1),],
-                Rotation::Rot2 => cell_array![(2, 0), (2, 1), (2, 2), (2, 3),],
-                Rotation::Rot3 => cell_array![(0, 2), (1, 2), (2, 2), (3, 2),],
-                Rotation::Rot4 => cell_array![(1, 0), (1, 1), (1, 2), (1, 3),],
+                Rotation::Rot0 => cell_array![(0, 1), (1, 1), (2, 1), (3, 1),],
+                Rotation::Rot1 => cell_array![(2, 0), (2, 1), (2, 2), (2, 3),],
+                Rotation::Rot2 => cell_array![(0, 2), (1, 2), (2, 2), (3, 2),],
+                Rotation::Rot3 => cell_array![(1, 0), (1, 1), (1, 2), (1, 3),],
             },
 
             // - 0 1 -    - 0 1 -    - 0 1 -    - 0 1 -
@@ -154,50 +154,50 @@ impl Block {
             // 1 2 3 => - 1 2 => 0 1 2 => 1 2 -
             // - - -    - 3 -    - 3 -    - 3 -
             BlockType::T => match rot {
-                Rotation::Rot1 => cell_array![(1, 0), (0, 1), (1, 1), (2, 1),],
-                Rotation::Rot2 => cell_array![(1, 0), (1, 1), (2, 1), (1, 2),],
-                Rotation::Rot3 => cell_array![(0, 1), (1, 1), (2, 1), (1, 2),],
-                Rotation::Rot4 => cell_array![(1, 0), (0, 1), (1, 1), (1, 2),],
+                Rotation::Rot0 => cell_array![(1, 0), (0, 1), (1, 1), (2, 1),],
+                Rotation::Rot1 => cell_array![(1, 0), (1, 1), (2, 1), (1, 2),],
+                Rotation::Rot2 => cell_array![(0, 1), (1, 1), (2, 1), (1, 2),],
+                Rotation::Rot3 => cell_array![(1, 0), (0, 1), (1, 1), (1, 2),],
             },
 
             // - 0 1    - 0 -    - - -    0 - -
             // 2 3 - => - 1 2 => - 0 1 => 1 2 -
             // - - -    - - 3    2 3 -    - 3 -
             BlockType::S => match rot {
-                Rotation::Rot1 => cell_array![(1, 0), (2, 0), (0, 1), (1, 1),],
-                Rotation::Rot2 => cell_array![(1, 0), (1, 1), (2, 1), (2, 2),],
-                Rotation::Rot3 => cell_array![(1, 1), (2, 1), (0, 2), (1, 2),],
-                Rotation::Rot4 => cell_array![(0, 0), (0, 1), (1, 1), (1, 2),],
+                Rotation::Rot0 => cell_array![(1, 0), (2, 0), (0, 1), (1, 1),],
+                Rotation::Rot1 => cell_array![(1, 0), (1, 1), (2, 1), (2, 2),],
+                Rotation::Rot2 => cell_array![(1, 1), (2, 1), (0, 2), (1, 2),],
+                Rotation::Rot3 => cell_array![(0, 0), (0, 1), (1, 1), (1, 2),],
             },
 
             // 0 1 -    - - 0    - - -    - 0 -
             // - 2 3 => - 1 2 => 0 1 - => 1 2 -
             // - - -    - 3 -    - 2 3    3 - -
             BlockType::Z => match rot {
-                Rotation::Rot1 => cell_array![(0, 0), (1, 0), (1, 1), (2, 1),],
-                Rotation::Rot2 => cell_array![(2, 0), (1, 1), (2, 1), (1, 2),],
-                Rotation::Rot3 => cell_array![(0, 1), (1, 1), (1, 2), (2, 2),],
-                Rotation::Rot4 => cell_array![(1, 0), (0, 1), (1, 1), (0, 2),],
+                Rotation::Rot0 => cell_array![(0, 0), (1, 0), (1, 1), (2, 1),],
+                Rotation::Rot1 => cell_array![(2, 0), (1, 1), (2, 1), (1, 2),],
+                Rotation::Rot2 => cell_array![(0, 1), (1, 1), (1, 2), (2, 2),],
+                Rotation::Rot3 => cell_array![(1, 0), (0, 1), (1, 1), (0, 2),],
             },
 
             // 0 - -    - 0 1    - - -    - 0 -
             // 1 2 3 => - 2 - => 0 1 2 => - 1 -
             // - - -    - 3 -    - - 3    2 3 -
             BlockType::J => match rot {
-                Rotation::Rot1 => cell_array![(0, 0), (0, 1), (1, 1), (2, 1),],
-                Rotation::Rot2 => cell_array![(1, 0), (2, 0), (1, 1), (1, 2),],
-                Rotation::Rot3 => cell_array![(0, 1), (1, 1), (2, 1), (2, 2),],
-                Rotation::Rot4 => cell_array![(1, 0), (1, 1), (0, 2), (1, 2),],
+                Rotation::Rot0 => cell_array![(0, 0), (0, 1), (1, 1), (2, 1),],
+                Rotation::Rot1 => cell_array![(1, 0), (2, 0), (1, 1), (1, 2),],
+                Rotation::Rot2 => cell_array![(0, 1), (1, 1), (2, 1), (2, 2),],
+                Rotation::Rot3 => cell_array![(1, 0), (1, 1), (0, 2), (1, 2),],
             },
 
             // - - 0    - 0 -    - - -    0 1 -
             // 1 2 3 => - 1 - => 0 1 2 => - 2 -
             // - - -    - 2 3    3 - -    - 3 -
             BlockType::L => match rot {
-                Rotation::Rot1 => cell_array![(2, 0), (0, 1), (1, 1), (2, 1),],
-                Rotation::Rot2 => cell_array![(1, 0), (1, 1), (1, 2), (2, 2),],
-                Rotation::Rot3 => cell_array![(0, 1), (1, 1), (2, 1), (0, 2),],
-                Rotation::Rot4 => cell_array![(0, 0), (1, 0), (1, 1), (1, 2),],
+                Rotation::Rot0 => cell_array![(2, 0), (0, 1), (1, 1), (2, 1),],
+                Rotation::Rot1 => cell_array![(1, 0), (1, 1), (1, 2), (2, 2),],
+                Rotation::Rot2 => cell_array![(0, 1), (1, 1), (2, 1), (0, 2),],
+                Rotation::Rot3 => cell_array![(0, 0), (1, 0), (1, 1), (1, 2),],
             },
         }
     }

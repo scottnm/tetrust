@@ -90,7 +90,6 @@ fn main() {
         BOARD_DIM_WIDTH,
         BOARD_DIM_HEIGHT,
         ThreadRangeRng::new(),
-        ThreadRangeRng::new(),
     );
 
     let mut inputs = (false, false);

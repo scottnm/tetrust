@@ -20,27 +20,24 @@ enum Bound {
     RightWall(i32),
 }
 
-pub struct GameState<TBlockTypeRand, TBlockPosRand>
+pub struct GameState<TBlockTypeRand>
 where
     TBlockTypeRand: RangeRng<usize>,
-    TBlockPosRand: RangeRng<i32>,
 {
     board_pos_x: i32,
     board_pos_y: i32,
     board_width: i32,
     board_height: i32,
     block_type_rng: TBlockTypeRand,
-    block_pos_rng: TBlockPosRand,
     block_count: usize,
     blocks: Box<[BlockType]>,
     block_positions: Box<[Cell]>,
     game_phase: GamePhase,
 }
 
-impl<TBlockTypeRand, TBlockPosRand> GameState<TBlockTypeRand, TBlockPosRand>
+impl<TBlockTypeRand> GameState<TBlockTypeRand>
 where
     TBlockTypeRand: RangeRng<usize>,
-    TBlockPosRand: RangeRng<i32>,
 {
     pub fn new(
         board_pos_x: i32,
@@ -48,8 +45,7 @@ where
         board_width: i32,
         board_height: i32,
         block_type_rng: TBlockTypeRand,
-        block_pos_rng: TBlockPosRand,
-    ) -> GameState<TBlockTypeRand, TBlockPosRand> {
+    ) -> GameState<TBlockTypeRand> {
         let max_blocks = (board_width * board_height) as usize;
         GameState {
             board_pos_x,
@@ -57,7 +53,6 @@ where
             board_width,
             board_height,
             block_type_rng,
-            block_pos_rng,
             block_count: 0,
             blocks: (vec![BlockType::I; max_blocks]).into_boxed_slice(),
             block_positions: (vec![Cell { x: 0, y: 0 }; max_blocks]).into_boxed_slice(),

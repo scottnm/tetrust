@@ -57,7 +57,7 @@
 
 ![Image of left-right collision](demo/7-lr-collision.gif)
 
-- [X] [Constrain board size and add game over screen](https://github.com/scottnm/tetrust/commit/FILL-ME-IN)
+- [X] [Constrain board size and add game over screen](https://github.com/scottnm/tetrust/commit/44bbeee4d17255c68c0f7c96ebe29a6b6c151b2a)
 
 ![Image of constrained board with game over screen](demo/8-constrained-gameover-blink.gif)
 

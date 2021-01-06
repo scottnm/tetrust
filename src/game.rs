@@ -216,9 +216,9 @@ fn translate_cells(cells: &[Cell; 4], row_translation: i32, col_translation: i32
 
 fn is_touching_bound(block: BlockType, block_pos: Cell, bound: Bound) -> bool {
     match bound {
-        Bound::Floor(floor) => block_pos.y + block.height() >= floor,
-        Bound::LeftWall(left) => block_pos.x <= left + 1,
-        Bound::RightWall(right) => block_pos.x + block.width() >= right,
+        Bound::Floor(floor) => block.top() + block_pos.y + block.height() >= floor,
+        Bound::LeftWall(left) => block.left() + block_pos.x <= left + 1,
+        Bound::RightWall(right) => block.left() + block_pos.x + block.width() >= right,
     }
 }
 

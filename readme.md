@@ -2,8 +2,6 @@
 
 ## Intent
 
-- Attempt to make use of data-oriented design
-- Attempt to make use entity systems
 - Practice rust
 - Use a TUI (cuz tuis are cool)
 
@@ -59,7 +57,10 @@
 
 ![Image of left-right collision](demo/7-lr-collision.gif)
 
-- [ ] Constrain board size
+- [X] [Constrain board size and add game over screen](https://github.com/scottnm/tetrust/commit/FILL-ME-IN)
+
+![Image of constrained board with game over screen](demo/8-constrained-gameover-blink.gif)
+
 - [ ] Allow tetrominos to rotate
 - [ ] Allow clearing lines
 - [ ] Speed up pieces falling as more lines are cleared

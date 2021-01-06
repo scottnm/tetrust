@@ -10,16 +10,11 @@ use crate::game::*;
 use crate::randwrapper::*;
 use std::time;
 
-fn render_block(
-    window: &pancurses::Window,
-    Cell { x: col, y: row }: Cell,
-    block: BlockType,
-    rot: Rotation,
-) {
+fn render_block(window: &pancurses::Window, Cell { x: col, y: row }: Cell, block: Block) {
     let sprite_char = block.sprite_char();
-    let color_pair = pancurses::COLOR_PAIR(block as pancurses::chtype);
+    let color_pair = pancurses::COLOR_PAIR(block.block_type as pancurses::chtype);
     window.attron(color_pair);
-    for cell in block.cells(rot).iter() {
+    for cell in &block.cells() {
         // Ok to blit block sprite even if position is OOB
         window.mvaddch(cell.y + row, cell.x + col, sprite_char);
     }
@@ -30,8 +25,12 @@ fn setup_colors() {
     pancurses::start_color();
 
     assert!(BLOCKTYPES.len() < pancurses::COLOR_PAIRS() as usize);
-    for block in BLOCKTYPES.iter() {
-        pancurses::init_pair(*block as i16, pancurses::COLOR_BLACK, block.sprite_color());
+    for block_type in BLOCKTYPES.iter() {
+        pancurses::init_pair(
+            *block_type as i16,
+            pancurses::COLOR_BLACK,
+            block_type.sprite_color(),
+        );
     }
 }
 
@@ -178,8 +177,8 @@ fn main() {
         );
 
         for block_id in 0..game_state.block_count() {
-            let (position, block, rot) = game_state.block(block_id);
-            render_block(&window, position, block, rot);
+            let (position, block) = game_state.block(block_id);
+            render_block(&window, position, block);
         }
 
         if game_state.is_game_over() {

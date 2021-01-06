@@ -20,6 +20,12 @@ pub enum BlockType {
     L,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct Block {
+    pub rot: Rotation,
+    pub block_type: BlockType,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cell {
     pub x: i32,
@@ -47,7 +53,7 @@ pub static BLOCKTYPES: [BlockType; 7] = [
 ];
 
 impl Rotation {
-    pub fn rotate(&self, relative_rotation: i32) -> Self {
+    fn rotate(&self, relative_rotation: i32) -> Self {
         enum RotationDirection {
             None,
             Left,
@@ -80,10 +86,6 @@ impl Rotation {
 }
 
 impl BlockType {
-    pub fn random<T: RangeRng<usize>>(rng: &mut T) -> BlockType {
-        BLOCKTYPES[rng.gen_range(1, BLOCKTYPES.len() + 1) - 1]
-    }
-
     pub fn sprite_char(&self) -> char {
         match *self {
             BlockType::I => 'O',
@@ -107,9 +109,30 @@ impl BlockType {
             BlockType::L => pancurses::COLOR_BLUE,
         }
     }
+}
 
-    pub fn cells(&self, rot: Rotation) -> [Cell; 4] {
-        match *self {
+impl Block {
+    pub fn default() -> Self {
+        Block {
+            rot: Rotation::Rot1,
+            block_type: BlockType::I,
+        }
+    }
+
+    pub fn random<T: RangeRng<usize>>(rng: &mut T) -> Self {
+        Block {
+            rot: Rotation::Rot1,
+            block_type: BLOCKTYPES[rng.gen_range(1, BLOCKTYPES.len() + 1) - 1],
+        }
+    }
+
+    pub fn sprite_char(&self) -> char {
+        self.block_type.sprite_char()
+    }
+
+    pub fn cells(&self) -> [Cell; 4] {
+        let rot = self.rot;
+        match self.block_type {
             // - - - -    - - 0 -    - - - -    - 0 - -
             // 0 1 2 3 => - - 1 - => - - - - => - 1 - -
             // - - - -    - - 2 -    0 1 2 3    - 2 - -
@@ -179,31 +202,38 @@ impl BlockType {
         }
     }
 
-    pub fn top(&self, rot: Rotation) -> i32 {
+    pub fn top(&self) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        self.cells(rot).iter().min_by_key(|cell| cell.y).unwrap().y
+        self.cells().iter().min_by_key(|cell| cell.y).unwrap().y
     }
 
-    pub fn left(&self, rot: Rotation) -> i32 {
+    pub fn left(&self) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        self.cells(rot).iter().min_by_key(|cell| cell.x).unwrap().x
+        self.cells().iter().min_by_key(|cell| cell.x).unwrap().x
     }
 
-    pub fn width(&self, rot: Rotation) -> i32 {
+    pub fn width(&self) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        let left_block = self.left(rot);
-        let right_block = self.cells(rot).iter().max_by_key(|cell| cell.x).unwrap().x;
+        let left_block = self.left();
+        let right_block = self.cells().iter().max_by_key(|cell| cell.x).unwrap().x;
         right_block - left_block + 1
     }
 
-    pub fn height(&self, rot: Rotation) -> i32 {
+    pub fn height(&self) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        let top_block = self.top(rot);
-        let bottom_block = self.cells(rot).iter().max_by_key(|cell| cell.y).unwrap().y;
+        let top_block = self.top();
+        let bottom_block = self.cells().iter().max_by_key(|cell| cell.y).unwrap().y;
         bottom_block - top_block + 1
+    }
+
+    pub fn rotate(&self, relative_rotation: i32) -> Self {
+        Self {
+            rot: self.rot.rotate(relative_rotation),
+            block_type: self.block_type,
+        }
     }
 }

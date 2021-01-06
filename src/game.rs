@@ -73,10 +73,8 @@ where
                 assert!(self.block_count < self.blocks.len());
 
                 let new_block = BlockType::random(&mut self.block_type_rng);
-                let start_col: i32 = self.block_pos_rng.gen_range(
-                    self.board_pos_x,
-                    self.board_pos_x + self.board_width - new_block.width(),
-                );
+                let start_col = (self.board_width - new_block.width()) / 2 + self.board_pos_x
+                    - new_block.left();
                 let start_row: i32 = self.board_pos_y - new_block.height();
 
                 let start_pos = Cell {

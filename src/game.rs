@@ -153,15 +153,15 @@ where
             return true;
         }
 
-        let is_touching_block_below = is_touching_block(
-            block_id,
-            self.block_count,
-            &self.blocks,
-            &self.block_positions,
+        let do_blocks_collide_below = do_blocks_collide(
+            self.blocks[block_id],
+            self.block_positions[block_id],
+            &self.blocks[0..self.block_count - 1],
+            &self.block_positions[0..self.block_count - 1],
             Vec2 { x: 0, y: 1 },
         );
 
-        is_touching_block_below
+        do_blocks_collide_below
     }
 
     pub fn can_block_move(&self, block_id: usize, horizontal_motion: i32) -> bool {
@@ -192,15 +192,15 @@ where
             y: 0,
         };
 
-        let is_touching_block_side = is_touching_block(
-            block_id,
-            self.block_count,
-            &self.blocks,
-            &self.block_positions,
+        let do_blocks_collide_side = do_blocks_collide(
+            self.blocks[block_id],
+            self.block_positions[block_id],
+            &self.blocks[0..self.block_count - 1],
+            &self.block_positions[0..self.block_count - 1],
             motion_vec,
         );
 
-        !is_touching_block_side
+        !do_blocks_collide_side
     }
 
     pub fn is_game_over(&self) -> bool {
@@ -226,34 +226,26 @@ fn is_touching_bound(block: Block, block_pos: Cell, bound: Bound) -> bool {
     }
 }
 
-fn is_touching_block(
-    block_id: usize,
-    block_count: usize,
-    blocks: &[Block],
-    block_positions: &[Cell],
-    touch_vector: Vec2,
+fn do_blocks_collide(
+    block: Block,
+    block_pos: Cell,
+    other_blocks: &[Block],
+    other_block_positions: &[Cell],
+    move_vector: Vec2,
 ) -> bool {
-    assert_eq!(blocks.len(), block_positions.len());
-    assert!(blocks.len() >= block_count);
+    assert_eq!(other_blocks.len(), other_block_positions.len());
 
     let block_cells = translate_cells(
-        &blocks[block_id].cells(),
-        block_positions[block_id].y + touch_vector.y,
-        block_positions[block_id].x + touch_vector.x,
+        &block.cells(),
+        block_pos.y + move_vector.y,
+        block_pos.x + move_vector.x,
     );
 
     // Only need to check for collisions against blocks that were created before this block id
     // since all other blocks will always be higher up in the grid.
-    for other_block_id in 0..block_count {
-        if other_block_id == block_id {
-            continue;
-        }
-
-        let other_block_cells = translate_cells(
-            &blocks[other_block_id].cells(),
-            block_positions[other_block_id].y,
-            block_positions[other_block_id].x,
-        );
+    for (other_block, other_block_pos) in other_blocks.iter().zip(other_block_positions.iter()) {
+        let other_block_cells =
+            translate_cells(&other_block.cells(), other_block_pos.y, other_block_pos.x);
 
         for cell in block_cells.iter() {
             for other_cell in other_block_cells.iter() {

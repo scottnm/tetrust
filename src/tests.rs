@@ -127,7 +127,7 @@ mod tests {
         assert!(has_block_landed_oob(&game_state, FINAL_BLOCK_ID));
     }
 
-    fn last_block<T>(game_state: &GameState<T>) -> (Cell, BlockType)
+    fn last_block<T>(game_state: &GameState<T>) -> (Cell, BlockType, Rotation)
     where
         T: RangeRng<usize>,
     {
@@ -140,7 +140,7 @@ mod tests {
     {
         let block = last_block(game_state);
         let last_block_pos = block.0;
-        last_block_pos.x + block.1.left()
+        last_block_pos.x + block.1.left(block.2)
     }
 
     fn last_block_distance_to_right_wall<T>(game_state: &GameState<T>) -> i32
@@ -148,9 +148,10 @@ mod tests {
         T: RangeRng<usize>,
     {
         let block = last_block(game_state);
-        let last_block_width = block.1.width();
+        let last_block_width = block.1.width(block.2);
         let last_block_pos = block.0;
-        let last_block_rightmost_cell = last_block_pos.x + block.1.left() + last_block_width - 1;
+        let last_block_rightmost_cell =
+            last_block_pos.x + block.1.left(block.2) + last_block_width - 1;
 
         (TEST_BOARD_WIDTH - 1) - last_block_rightmost_cell
     }
@@ -236,7 +237,8 @@ mod tests {
         //     oo
         //      xx
         //     xx
-        for _ in 0..last_block(&game_state).1.width() {
+        let (_, last_block_t, last_block_rot) = last_block(&game_state);
+        for _ in 0..last_block_t.width(last_block_rot) {
             game_state.move_block_horizontal(1);
         }
         // drop the latest block until its 1 block away from touching the bottom
@@ -249,9 +251,11 @@ mod tests {
         for _ in 0..TEST_BOARD_HEIGHT - 1 {
             game_state.tick();
         }
+
+        let (last_block_cell, last_block_t, last_block_rot) = last_block(&game_state);
         assert_eq!(
-            (last_block(&game_state).0).y,
-            TEST_BOARD_HEIGHT - 1 - last_block(&game_state).1.height()
+            last_block_cell.y,
+            TEST_BOARD_HEIGHT - 1 - last_block_t.height(last_block_rot)
         );
 
         // can't move the last block to the left because of collision
@@ -270,9 +274,10 @@ mod tests {
         //      xx $$
         //     xx $$
         game_state.tick();
+        let (last_block_cell, last_block_t, last_block_rot) = last_block(&game_state);
         assert_eq!(
-            (last_block(&game_state).0).y,
-            TEST_BOARD_HEIGHT - last_block(&game_state).1.height()
+            last_block_cell.y,
+            TEST_BOARD_HEIGHT - last_block_t.height(last_block_rot)
         );
 
         // the last block can now move left

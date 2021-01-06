@@ -10,11 +10,16 @@ use crate::game::*;
 use crate::randwrapper::*;
 use std::time;
 
-fn render_block(window: &pancurses::Window, Cell { x: col, y: row }: Cell, block: BlockType) {
+fn render_block(
+    window: &pancurses::Window,
+    Cell { x: col, y: row }: Cell,
+    block: BlockType,
+    rot: Rotation,
+) {
     let sprite_char = block.sprite_char();
     let color_pair = pancurses::COLOR_PAIR(block as pancurses::chtype);
     window.attron(color_pair);
-    for cell in block.cells().iter() {
+    for cell in block.cells(rot).iter() {
         // Ok to blit block sprite even if position is OOB
         window.mvaddch(cell.y + row, cell.x + col, sprite_char);
     }
@@ -143,8 +148,8 @@ fn main() {
         );
 
         for block_id in 0..game_state.block_count() {
-            let (position, block) = game_state.block(block_id);
-            render_block(&window, position, block);
+            let (position, block, rot) = game_state.block(block_id);
+            render_block(&window, position, block, rot);
         }
 
         if game_state.is_game_over() {

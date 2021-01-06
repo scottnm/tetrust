@@ -32,6 +32,7 @@ where
     block_count: usize,
     blocks: Box<[BlockType]>,
     block_positions: Box<[Cell]>,
+    block_rots: Box<[Rotation]>,
     game_phase: GamePhase,
 }
 
@@ -56,6 +57,7 @@ where
             block_count: 0,
             blocks: (vec![BlockType::I; max_blocks]).into_boxed_slice(),
             block_positions: (vec![Cell { x: 0, y: 0 }; max_blocks]).into_boxed_slice(),
+            block_rots: (vec![Rotation::Rot1; max_blocks]).into_boxed_slice(),
             game_phase: GamePhase::GenerateBlock,
         }
     }
@@ -67,10 +69,12 @@ where
                 assert_eq!(self.blocks.len(), self.block_positions.len());
                 assert!(self.block_count < self.blocks.len());
 
+                let new_block_rot = Rotation::Rot1;
                 let new_block = BlockType::random(&mut self.block_type_rng);
-                let start_col = (self.board_width - new_block.width()) / 2 + self.board_pos_x
-                    - new_block.left();
-                let start_row: i32 = self.board_pos_y - new_block.height();
+                let start_col = (self.board_width - new_block.width(new_block_rot)) / 2
+                    + self.board_pos_x
+                    - new_block.left(new_block_rot);
+                let start_row: i32 = self.board_pos_y - new_block.height(new_block_rot);
 
                 let start_pos = Cell {
                     x: start_col,
@@ -79,6 +83,7 @@ where
 
                 self.blocks[self.block_count] = new_block;
                 self.block_positions[self.block_count] = start_pos;
+                self.block_rots[self.block_count] = new_block_rot;
                 self.block_count += 1;
                 self.game_phase = GamePhase::MoveBlock;
             }
@@ -121,9 +126,14 @@ where
         self.block_count
     }
 
-    pub fn block(&self, id: usize) -> (Cell, BlockType) {
+    pub fn block(&self, id: usize) -> (Cell, BlockType, Rotation) {
         assert_eq!(self.blocks.len(), self.block_positions.len());
-        (self.block_positions[id], self.blocks[id])
+        assert_eq!(self.blocks.len(), self.block_rots.len());
+        (
+            self.block_positions[id],
+            self.blocks[id],
+            self.block_rots[id],
+        )
     }
 
     // NOTE (scmunro): this function was added mostly for testing purposes. If possible, I'd like
@@ -135,6 +145,7 @@ where
         let is_touching_floor = is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
+            self.block_rots[block_id],
             Bound::Floor(self.board_pos_y + self.board_height),
         );
 
@@ -147,6 +158,7 @@ where
             self.block_count,
             &self.blocks,
             &self.block_positions,
+            &self.block_rots,
             Vec2 { x: 0, y: 1 },
         );
 
@@ -169,6 +181,7 @@ where
         let is_touching_wall = is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
+            self.block_rots[block_id],
             wall_to_check,
         );
 
@@ -186,6 +199,7 @@ where
             self.block_count,
             &self.blocks,
             &self.block_positions,
+            &self.block_rots,
             motion_vec,
         );
 
@@ -207,11 +221,15 @@ fn translate_cells(cells: &[Cell; 4], row_translation: i32, col_translation: i32
     translated_cells
 }
 
-fn is_touching_bound(block: BlockType, block_pos: Cell, bound: Bound) -> bool {
+fn is_touching_bound(block: BlockType, block_pos: Cell, block_rot: Rotation, bound: Bound) -> bool {
     match bound {
-        Bound::Floor(floor) => block.top() + block_pos.y + block.height() >= floor,
-        Bound::LeftWall(left) => block.left() + block_pos.x <= left + 1,
-        Bound::RightWall(right) => block.left() + block_pos.x + block.width() >= right,
+        Bound::Floor(floor) => {
+            block.top(block_rot) + block_pos.y + block.height(block_rot) >= floor
+        }
+        Bound::LeftWall(left) => block.left(block_rot) + block_pos.x <= left + 1,
+        Bound::RightWall(right) => {
+            block.left(block_rot) + block_pos.x + block.width(block_rot) >= right
+        }
     }
 }
 
@@ -220,13 +238,14 @@ fn is_touching_block(
     block_count: usize,
     blocks: &[BlockType],
     block_positions: &[Cell],
+    block_rots: &[Rotation],
     touch_vector: Vec2,
 ) -> bool {
     assert_eq!(blocks.len(), block_positions.len());
     assert!(blocks.len() >= block_count);
 
     let block_cells = translate_cells(
-        &blocks[block_id].cells(),
+        &blocks[block_id].cells(block_rots[block_id]),
         block_positions[block_id].y + touch_vector.y,
         block_positions[block_id].x + touch_vector.x,
     );
@@ -239,7 +258,7 @@ fn is_touching_block(
         }
 
         let other_block_cells = translate_cells(
-            &blocks[other_block_id].cells(),
+            &blocks[other_block_id].cells(block_rots[other_block_id]),
             block_positions[other_block_id].y,
             block_positions[other_block_id].x,
         );

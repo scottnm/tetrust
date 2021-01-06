@@ -75,8 +75,7 @@ impl BlockType {
         }
     }
 
-    pub fn cells(&self) -> [Cell; 4] {
-        let rot = Rotation::Rot1;
+    pub fn cells(&self, rot: Rotation) -> [Cell; 4] {
         match *self {
             // - - - -    - - 0 -    - - - -    - 0 - -
             // 0 1 2 3 => - - 1 - => - - - - => - 1 - -
@@ -147,31 +146,31 @@ impl BlockType {
         }
     }
 
-    pub fn top(&self) -> i32 {
+    pub fn top(&self, rot: Rotation) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        self.cells().iter().min_by_key(|cell| cell.y).unwrap().y
+        self.cells(rot).iter().min_by_key(|cell| cell.y).unwrap().y
     }
 
-    pub fn left(&self) -> i32 {
+    pub fn left(&self, rot: Rotation) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        self.cells().iter().min_by_key(|cell| cell.x).unwrap().x
+        self.cells(rot).iter().min_by_key(|cell| cell.x).unwrap().x
     }
 
-    pub fn width(&self) -> i32 {
+    pub fn width(&self, rot: Rotation) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        let left_block = self.left();
-        let right_block = self.cells().iter().max_by_key(|cell| cell.x).unwrap().x;
+        let left_block = self.left(rot);
+        let right_block = self.cells(rot).iter().max_by_key(|cell| cell.x).unwrap().x;
         right_block - left_block + 1
     }
 
-    pub fn height(&self) -> i32 {
+    pub fn height(&self, rot: Rotation) -> i32 {
         // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
-        let top_block = self.top();
-        let bottom_block = self.cells().iter().max_by_key(|cell| cell.y).unwrap().y;
+        let top_block = self.top(rot);
+        let bottom_block = self.cells(rot).iter().max_by_key(|cell| cell.y).unwrap().y;
         bottom_block - top_block + 1
     }
 }

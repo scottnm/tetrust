@@ -76,6 +76,7 @@ fn main() {
 
     pancurses::noecho();
     pancurses::cbreak();
+    pancurses::curs_set(0);
     pancurses::set_title("TETRUST");
     window.nodelay(true);
     setup_colors();

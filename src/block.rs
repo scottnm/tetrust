@@ -46,6 +46,39 @@ pub static BLOCKTYPES: [BlockType; 7] = [
     BlockType::L,
 ];
 
+impl Rotation {
+    pub fn rotate(&self, relative_rotation: i32) -> Self {
+        enum RotationDirection {
+            None,
+            Left,
+            Right,
+        }
+
+        let rotation_direction = match relative_rotation {
+            0 => RotationDirection::None,
+            -1 => RotationDirection::Left,
+            1 => RotationDirection::Right,
+            _ => panic!("Invalid relative rotation"),
+        };
+
+        match rotation_direction {
+            RotationDirection::None => *self,
+            RotationDirection::Left => match self {
+                Rotation::Rot1 => Rotation::Rot4,
+                Rotation::Rot2 => Rotation::Rot1,
+                Rotation::Rot3 => Rotation::Rot2,
+                Rotation::Rot4 => Rotation::Rot3,
+            },
+            RotationDirection::Right => match self {
+                Rotation::Rot1 => Rotation::Rot2,
+                Rotation::Rot2 => Rotation::Rot3,
+                Rotation::Rot3 => Rotation::Rot4,
+                Rotation::Rot4 => Rotation::Rot1,
+            },
+        }
+    }
+}
+
 impl BlockType {
     pub fn random<T: RangeRng<usize>>(rng: &mut T) -> BlockType {
         BLOCKTYPES[rng.gen_range(1, BLOCKTYPES.len() + 1) - 1]

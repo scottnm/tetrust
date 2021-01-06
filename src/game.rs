@@ -91,17 +91,17 @@ where
             // Move the latest block down across the board
             GamePhase::MoveBlock => {
                 // we are always moving the last block
-                let moving_block_id = self.block_count - 1;
+                let active_block_id = self.block_count - 1;
 
-                if self.has_block_landed(moving_block_id) {
-                    let is_block_oob = self.block_positions[moving_block_id].y < self.board_pos_y;
+                if self.has_block_landed(active_block_id) {
+                    let is_block_oob = self.block_positions[active_block_id].y < self.board_pos_y;
                     self.game_phase = if is_block_oob {
                         GamePhase::GameOver
                     } else {
                         GamePhase::GenerateBlock
                     }
                 } else {
-                    self.block_positions[moving_block_id].y += 1;
+                    self.block_positions[active_block_id].y += 1;
                 }
             }
 
@@ -113,10 +113,21 @@ where
     pub fn move_block_horizontal(&mut self, horizontal_motion: i32) {
         match self.game_phase {
             GamePhase::MoveBlock => {
-                let moving_block_id = self.block_count - 1; // we are always moving the last block
-                if self.can_block_move(moving_block_id, horizontal_motion) {
-                    self.block_positions[moving_block_id].x += horizontal_motion;
+                let active_block_id = self.block_count - 1; // we are always moving the last block
+                if self.can_block_move(active_block_id, horizontal_motion) {
+                    self.block_positions[active_block_id].x += horizontal_motion;
                 }
+            }
+            GamePhase::GenerateBlock | GamePhase::GameOver => (),
+        }
+    }
+
+    pub fn rotate_block(&mut self, relative_rotation: i32) {
+        match self.game_phase {
+            GamePhase::MoveBlock => {
+                let active_block = &mut self.block_rots[self.block_count - 1]; // we are always moving the last block
+                let new_rotation = active_block.rotate(relative_rotation);
+                *active_block = new_rotation;
             }
             GamePhase::GenerateBlock | GamePhase::GameOver => (),
         }

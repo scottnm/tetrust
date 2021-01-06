@@ -97,7 +97,20 @@ fn main() {
         ThreadRangeRng::new(),
     );
 
-    let mut inputs = (false, false);
+    struct Inputs {
+        move_left: bool,
+        move_right: bool,
+        rot_left: bool,
+        rot_right: bool,
+    }
+
+    let mut inputs = Inputs {
+        move_left: false,
+        move_right: false,
+        rot_left: false,
+        rot_right: false,
+    };
+
     let mut game_over_blit_timer = Option::<time::Instant>::None;
 
     loop {
@@ -105,11 +118,13 @@ fn main() {
         if let Some(pancurses::Input::Character(ch)) = window.getch() {
             match ch {
                 // check for movement inputs
-                'a' => inputs.0 = true, // move left
-                'd' => inputs.1 = true, // move right
+                'a' => inputs.move_left = true,
+                'd' => inputs.move_right = true,
+                'q' => inputs.rot_left = true,
+                'e' => inputs.rot_right = true,
 
                 // debug
-                'q' => break,                                       // kill game early
+                'p' => break,                                       // kill game early
                 'z' => game_tick_period *= 2,                       // slowdown tick rate
                 'x' => game_tick_period = DEFAULT_GAME_TICK_PERIOD, // reset tick rate
                 'c' => game_tick_period /= 2,                       // speed up tick rate
@@ -120,14 +135,29 @@ fn main() {
         if last_input_handled.elapsed() >= INPUT_POLL_PERIOD {
             last_input_handled = time::Instant::now();
             let mut horizontal_motion: i32 = 0;
-            if inputs.0 {
+            if inputs.move_left {
                 horizontal_motion -= 1;
             }
-            if inputs.1 {
+            if inputs.move_right {
                 horizontal_motion += 1;
             }
             game_state.move_block_horizontal(horizontal_motion);
-            inputs = (false, false);
+
+            let mut relative_rotation: i32 = 0;
+            if inputs.rot_left {
+                relative_rotation -= 1;
+            }
+            if inputs.rot_right {
+                relative_rotation += 1;
+            }
+            game_state.rotate_block(relative_rotation);
+
+            inputs = Inputs {
+                move_left: false,
+                move_right: false,
+                rot_left: false,
+                rot_right: false,
+            };
         }
 
         // Tick the game state

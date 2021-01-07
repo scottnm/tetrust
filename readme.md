@@ -61,7 +61,8 @@
 
 ![Image of constrained board with game over screen](demo/8-constrained-gameover-blink.gif)
 
-- [X] [Allow tetrominos to rotate](https://github.com/scottnm/tetrust/commit/44bbeee4d17255c68c0f7c96ebe29a6b6c151b2a)
+- [X] [Allow tetrominos to rotate](https://github.com/scottnm/tetrust/commit/3dd8bba32517b65c19e1ad4082612eb287630734)
+
 ![Image of pieces rotation](demo/9-rotation.gif)
 
 - [ ] Allow clearing lines

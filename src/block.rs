@@ -9,7 +9,7 @@ pub enum Rotation {
 }
 
 // TODO (scottnm): separate out blocktype into blocktype and blockvisuals and blockdata (orientation+cells)
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BlockType {
     I = 1, // NOTE (scottnm): if our enum starts at 0, init_pair doesn't seem to function. Needs investigation
     O,
@@ -80,6 +80,66 @@ impl Rotation {
                 Rotation::Rot1 => Rotation::Rot2,
                 Rotation::Rot2 => Rotation::Rot3,
                 Rotation::Rot3 => Rotation::Rot0,
+            },
+        }
+    }
+
+    pub fn get_kick_attempts(&self, block: BlockType, dest_rot: Rotation) -> [Cell; 5] {
+        match block {
+            BlockType::O => panic!("O blocks do not need to be kicked"),
+            BlockType::I => match (*self, dest_rot) {
+                (Rotation::Rot0, Rotation::Rot1) => {
+                    cell_array![(0, 0), (-2, 0), (1, 0), (-2, -1), (1, 2)]
+                }
+                (Rotation::Rot1, Rotation::Rot0) => {
+                    cell_array![(0, 0), (2, 0), (-1, 0), (2, 1), (-1, -2)]
+                }
+                (Rotation::Rot1, Rotation::Rot2) => {
+                    cell_array![(0, 0), (-1, 0), (2, 0), (-1, 2), (2, -1)]
+                }
+                (Rotation::Rot2, Rotation::Rot1) => {
+                    cell_array![(0, 0), (1, 0), (-2, 0), (1, -2), (-2, 1)]
+                }
+                (Rotation::Rot2, Rotation::Rot3) => {
+                    cell_array![(0, 0), (2, 0), (-1, 0), (2, 1), (-1, -2)]
+                }
+                (Rotation::Rot3, Rotation::Rot2) => {
+                    cell_array![(0, 0), (-2, 0), (1, 0), (-2, -1), (1, 2)]
+                }
+                (Rotation::Rot3, Rotation::Rot0) => {
+                    cell_array![(0, 0), (1, 0), (-2, 0), (1, -2), (-2, 1)]
+                }
+                (Rotation::Rot0, Rotation::Rot3) => {
+                    cell_array![(0, 0), (-1, 0), (2, 0), (-1, 2), (2, -1)]
+                }
+                (r1, r2) => panic!("{:?} >> {:?} is an invalid rotation", r1, r2),
+            },
+            _ => match (*self, dest_rot) {
+                (Rotation::Rot0, Rotation::Rot1) => {
+                    cell_array![(0, 0), (-1, 0), (-1, 1), (0, -2), (-1, -2)]
+                }
+                (Rotation::Rot1, Rotation::Rot0) => {
+                    cell_array![(0, 0), (1, 0), (1, -1), (0, 2), (1, 2)]
+                }
+                (Rotation::Rot1, Rotation::Rot2) => {
+                    cell_array![(0, 0), (1, 0), (1, -1), (0, 2), (1, 2)]
+                }
+                (Rotation::Rot2, Rotation::Rot1) => {
+                    cell_array![(0, 0), (-1, 0), (-1, 1), (0, -2), (-1, -2)]
+                }
+                (Rotation::Rot2, Rotation::Rot3) => {
+                    cell_array![(0, 0), (1, 0), (1, 1), (0, -2), (-1, -2)]
+                }
+                (Rotation::Rot3, Rotation::Rot2) => {
+                    cell_array![(0, 0), (-1, 0), (-1, -1), (0, 2), (1, -2)]
+                }
+                (Rotation::Rot3, Rotation::Rot0) => {
+                    cell_array![(0, 0), (-1, 0), (-1, -1), (0, 2), (-1, 2)]
+                }
+                (Rotation::Rot0, Rotation::Rot3) => {
+                    cell_array![(0, 0), (1, 0), (1, 1), (0, -2), (1, -2)]
+                }
+                (r1, r2) => panic!("{:?} >> {:?} is an invalid rotation", r1, r2),
             },
         }
     }

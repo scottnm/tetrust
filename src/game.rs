@@ -117,12 +117,64 @@ where
         }
     }
 
+    fn try_rotate_block(
+        &self,
+        original_block_pos: Cell,
+        original_block: Block,
+        relative_rotation: i32,
+    ) -> Option<(Block, Cell)> {
+        let rotated_block = original_block.rotate(relative_rotation);
+        let kicks = original_block
+            .rot
+            .get_kick_attempts(original_block.block_type, rotated_block.rot);
+
+        for kick in &kicks {
+            let kicked_block_pos = Cell {
+                x: original_block_pos.x + kick.x,
+                y: original_block_pos.y + kick.y,
+            };
+
+            let do_blocks_collide_after_kick = do_blocks_collide(
+                rotated_block,
+                kicked_block_pos,
+                &self.blocks[0..self.block_count - 1],
+                &self.block_positions[0..self.block_count - 1],
+                Vec2 { x: 0, y: 0 },
+            );
+
+            if !do_blocks_collide_after_kick {
+                return Some((rotated_block, kicked_block_pos));
+            }
+        }
+
+        None
+    }
+
     pub fn rotate_block(&mut self, relative_rotation: i32) {
+        // no rotation means no rotation. noop.
+        if relative_rotation == 0 {
+            return;
+        }
+
         match self.game_phase {
             GamePhase::MoveBlock => {
-                let active_block = &mut self.blocks[self.block_count - 1]; // we are always moving the last block
-                let rotated_block = active_block.rotate(relative_rotation);
-                *active_block = rotated_block;
+                // we are always updating the last block
+                let active_block = self.blocks[self.block_count - 1];
+
+                // O blocks can always rotate since rotating doesn't actually change their shape.
+                if active_block.block_type == BlockType::O {
+                    return;
+                }
+
+                let maybe_rotated_block = self.try_rotate_block(
+                    self.block_positions[self.block_count - 1],
+                    active_block,
+                    relative_rotation,
+                );
+                if let Some((rotated_block, kicked_pos)) = maybe_rotated_block {
+                    self.blocks[self.block_count - 1] = rotated_block;
+                    self.block_positions[self.block_count - 1] = kicked_pos;
+                }
             }
             GamePhase::GenerateBlock | GamePhase::GameOver => (),
         }

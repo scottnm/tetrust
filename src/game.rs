@@ -14,6 +14,7 @@ enum GamePhase {
     GameOver,
 }
 
+#[derive(Clone, Copy)]
 enum Bound {
     Floor(i32),
     LeftWall(i32),
@@ -27,12 +28,14 @@ where
     board_pos_x: i32,
     board_pos_y: i32,
     board_width: i32,
-    board_height: i32,
     block_type_rng: TBlockTypeRand,
     block_count: usize,
     blocks: Box<[Block]>,
     block_positions: Box<[Cell]>,
     game_phase: GamePhase,
+    left_wall: Bound,
+    right_wall: Bound,
+    floor: Bound,
 }
 
 impl<TBlockTypeRand> GameState<TBlockTypeRand>
@@ -51,12 +54,14 @@ where
             board_pos_x,
             board_pos_y,
             board_width,
-            board_height,
             block_type_rng,
             block_count: 0,
             blocks: (vec![Block::default(); max_blocks]).into_boxed_slice(),
             block_positions: (vec![Cell { x: 0, y: 0 }; max_blocks]).into_boxed_slice(),
             game_phase: GamePhase::GenerateBlock,
+            left_wall: Bound::LeftWall(board_pos_x - 1),
+            right_wall: Bound::RightWall(board_pos_x + board_width),
+            floor: Bound::Floor(board_pos_y + board_height),
         }
     }
 
@@ -142,9 +147,23 @@ where
                 Vec2 { x: 0, y: 0 },
             );
 
-            if !do_blocks_collide_after_kick {
-                return Some((rotated_block, kicked_block_pos));
+            if do_blocks_collide_after_kick {
+                continue;
             }
+
+            if is_touching_bound(rotated_block, kicked_block_pos, self.floor) {
+                continue;
+            }
+
+            if is_touching_bound(rotated_block, kicked_block_pos, self.left_wall) {
+                continue;
+            }
+
+            if is_touching_bound(rotated_block, kicked_block_pos, self.right_wall) {
+                continue;
+            }
+
+            return Some((rotated_block, kicked_block_pos));
         }
 
         None
@@ -198,7 +217,7 @@ where
         let is_touching_floor = is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
-            Bound::Floor(self.board_pos_y + self.board_height),
+            self.floor,
         );
 
         if is_touching_floor {
@@ -224,9 +243,9 @@ where
         }
 
         let wall_to_check = if horizontal_motion < 0 {
-            Bound::LeftWall(self.board_pos_x - 1)
+            self.left_wall
         } else {
-            Bound::RightWall(self.board_pos_x + self.board_width)
+            self.right_wall
         };
 
         let is_touching_wall = is_touching_bound(

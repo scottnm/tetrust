@@ -5,10 +5,9 @@ mod tests {
     use crate::randwrapper::*;
 
     #[allow(dead_code)] // ignore dead code because this is primarily used for debugging tests
-    fn log_blocks<T, U>(game: &GameState<T, U>)
+    fn log_blocks<T>(game: &GameState<T>)
     where
         T: RangeRng<usize>,
-        U: RangeRng<i32>,
     {
         for block_id in 0..game.block_count() {
             let block = game.block(block_id);
@@ -16,19 +15,17 @@ mod tests {
         }
     }
 
-    fn has_block_landed_oob<T, U>(game: &GameState<T, U>, block_id: usize) -> bool
+    fn has_block_landed_oob<T>(game: &GameState<T>, block_id: usize) -> bool
     where
         T: RangeRng<usize>,
-        U: RangeRng<i32>,
     {
         let block_pos = game.block(block_id).0;
-        game.has_block_landed(block_id) && block_pos.0 < 0
+        game.has_block_landed(block_id) && block_pos.y < 0
     }
 
-    fn has_any_block_landed_oob<T, U>(game: &GameState<T, U>) -> bool
+    fn has_any_block_landed_oob<T>(game: &GameState<T>) -> bool
     where
         T: RangeRng<usize>,
-        U: RangeRng<i32>,
     {
         // NOTE (scottnm): iterate in reverse order because currently the rules require the last block to be the one
         // that exceeded the board.
@@ -44,7 +41,7 @@ mod tests {
     const TEST_BOARD_WIDTH: i32 = 20;
     const TEST_BOARD_HEIGHT: i32 = 30;
 
-    fn gen_wrapper<T: PartialOrd>(rng: &mut RangeRng<T>, lower: T, upper: T) -> T {
+    fn gen_wrapper<T: PartialOrd>(rng: &mut dyn RangeRng<T>, lower: T, upper: T) -> T {
         rng.gen_range(lower, upper)
     }
 
@@ -78,7 +75,6 @@ mod tests {
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             ThreadRangeRng::new(),
-            ThreadRangeRng::new(),
         );
         while !game_state.is_game_over() {
             game_state.tick();
@@ -102,7 +98,6 @@ mod tests {
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             ThreadRangeRng::new(),
-            ThreadRangeRng::new(),
         );
         while !game_state.is_game_over() {
             game_state.tick();
@@ -119,53 +114,50 @@ mod tests {
             0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
-            mocks::SingleValueRangeRng::new(BlockType::I as usize),
-            mocks::SingleValueRangeRng::new(0 as i32),
+            mocks::SingleValueRangeRng::new(BlockType::O as usize),
         );
         while !game_state.is_game_over() {
             game_state.tick();
         }
-        const FINAL_BLOCK_COUNT: usize = (TEST_BOARD_HEIGHT as usize / 4) + 1;
+
+        // each 'O' piece will start horizontal and they all will perfectly stack
+        const FINAL_BLOCK_COUNT: usize = (TEST_BOARD_HEIGHT as usize / 2) + 1;
         const FINAL_BLOCK_ID: usize = FINAL_BLOCK_COUNT - 1;
         assert_eq!(game_state.block_count(), FINAL_BLOCK_COUNT);
         assert!(has_block_landed_oob(&game_state, FINAL_BLOCK_ID));
     }
 
-    fn last_block<T, U>(game_state: &GameState<T, U>) -> (Cell, BlockType)
+    fn last_block_data<T>(game_state: &GameState<T>) -> (Cell, Block)
     where
         T: RangeRng<usize>,
-        U: RangeRng<i32>,
     {
         game_state.block(game_state.block_count() - 1)
     }
 
-    fn last_block_distance_to_left_wall<T, U>(game_state: &GameState<T, U>) -> i32
+    fn last_block_distance_to_left_wall<T>(game_state: &GameState<T>) -> i32
     where
         T: RangeRng<usize>,
-        U: RangeRng<i32>,
     {
-        let last_block_pos = last_block(game_state).0;
-        let last_block_x_pos = last_block_pos.1;
-        last_block_x_pos
+        let block = last_block_data(game_state);
+        let last_block_pos = block.0;
+        last_block_pos.x + block.1.left()
     }
 
-    fn last_block_distance_to_right_wall<T, U>(game_state: &GameState<T, U>) -> i32
+    fn last_block_distance_to_right_wall<T>(game_state: &GameState<T>) -> i32
     where
         T: RangeRng<usize>,
-        U: RangeRng<i32>,
     {
-        let last_block_width = last_block(game_state).1.width();
-        let last_block_pos = last_block(game_state).0;
-        let last_block_x_pos = last_block_pos.1;
-        let last_block_rightmost_cell = last_block_x_pos + last_block_width - 1;
+        let block = last_block_data(game_state);
+        let last_block_width = block.1.width();
+        let last_block_pos = block.0;
+        let last_block_rightmost_cell = last_block_pos.x + block.1.left() + last_block_width - 1;
 
         (TEST_BOARD_WIDTH - 1) - last_block_rightmost_cell
     }
 
-    fn fall_block<T, U>(game_state: &mut GameState<T, U>)
+    fn fall_block<T>(game_state: &mut GameState<T>)
     where
         T: RangeRng<usize>,
-        U: RangeRng<i32>,
     {
         let original_block_count = game_state.block_count();
         while original_block_count == game_state.block_count() {
@@ -181,7 +173,6 @@ mod tests {
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             mocks::SingleValueRangeRng::new(BlockType::S as usize),
-            mocks::SingleValueRangeRng::new((TEST_BOARD_WIDTH / 2) as i32),
         );
 
         // generate first block
@@ -213,7 +204,7 @@ mod tests {
         for _ in 0..distance_to_right_wall {
             game_state.move_block_horizontal(1);
             assert_ne!(
-                distance_to_left_wall,
+                distance_to_right_wall,
                 last_block_distance_to_right_wall(&game_state)
             );
         }
@@ -245,7 +236,8 @@ mod tests {
         //     oo
         //      xx
         //     xx
-        for _ in 0..last_block(&game_state).1.width() {
+        let (_, last_block) = last_block_data(&game_state);
+        for _ in 0..last_block.width() {
             game_state.move_block_horizontal(1);
         }
         // drop the latest block until its 1 block away from touching the bottom
@@ -258,9 +250,11 @@ mod tests {
         for _ in 0..TEST_BOARD_HEIGHT - 1 {
             game_state.tick();
         }
+
+        let (last_block_pos, last_block) = last_block_data(&game_state);
         assert_eq!(
-            (last_block(&game_state).0).0,
-            TEST_BOARD_HEIGHT - 1 - last_block(&game_state).1.height()
+            last_block_pos.y,
+            TEST_BOARD_HEIGHT - 1 - last_block.height()
         );
 
         // can't move the last block to the left because of collision
@@ -279,10 +273,8 @@ mod tests {
         //      xx $$
         //     xx $$
         game_state.tick();
-        assert_eq!(
-            (last_block(&game_state).0).0,
-            TEST_BOARD_HEIGHT - last_block(&game_state).1.height()
-        );
+        let (last_block_cell, last_block) = last_block_data(&game_state);
+        assert_eq!(last_block_cell.y, TEST_BOARD_HEIGHT - last_block.height());
 
         // the last block can now move left
         //      xx

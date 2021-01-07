@@ -10,13 +10,13 @@ use crate::game::*;
 use crate::randwrapper::*;
 use std::time;
 
-fn render_block(window: &pancurses::Window, Cell(row, col): Cell, block: BlockType) {
+fn render_block(window: &pancurses::Window, Cell { x: col, y: row }: Cell, block: Block) {
     let sprite_char = block.sprite_char();
-    let color_pair = pancurses::COLOR_PAIR(block as pancurses::chtype);
+    let color_pair = pancurses::COLOR_PAIR(block.block_type as pancurses::chtype);
     window.attron(color_pair);
-    for cell in block.cells().iter() {
+    for cell in &block.cells() {
         // Ok to blit block sprite even if position is OOB
-        window.mvaddch(cell.0 + row, cell.1 + col, sprite_char);
+        window.mvaddch(cell.y + row, cell.x + col, sprite_char);
     }
     window.attroff(color_pair);
 }
@@ -25,8 +25,12 @@ fn setup_colors() {
     pancurses::start_color();
 
     assert!(BLOCKTYPES.len() < pancurses::COLOR_PAIRS() as usize);
-    for block in BLOCKTYPES.iter() {
-        pancurses::init_pair(*block as i16, pancurses::COLOR_BLACK, block.sprite_color());
+    for block_type in BLOCKTYPES.iter() {
+        pancurses::init_pair(
+            *block_type as i16,
+            pancurses::COLOR_BLACK,
+            block_type.sprite_color(),
+        );
     }
 }
 
@@ -76,6 +80,7 @@ fn main() {
 
     pancurses::noecho();
     pancurses::cbreak();
+    pancurses::curs_set(0);
     pancurses::set_title("TETRUST");
     window.nodelay(true);
     setup_colors();
@@ -89,10 +94,22 @@ fn main() {
         BOARD_DIM_WIDTH,
         BOARD_DIM_HEIGHT,
         ThreadRangeRng::new(),
-        ThreadRangeRng::new(),
     );
 
-    let mut inputs = (false, false);
+    struct Inputs {
+        move_left: bool,
+        move_right: bool,
+        rot_left: bool,
+        rot_right: bool,
+    }
+
+    let mut inputs = Inputs {
+        move_left: false,
+        move_right: false,
+        rot_left: false,
+        rot_right: false,
+    };
+
     let mut game_over_blit_timer = Option::<time::Instant>::None;
 
     loop {
@@ -100,11 +117,13 @@ fn main() {
         if let Some(pancurses::Input::Character(ch)) = window.getch() {
             match ch {
                 // check for movement inputs
-                'a' => inputs.0 = true, // move left
-                'd' => inputs.1 = true, // move right
+                'a' => inputs.move_left = true,
+                'd' => inputs.move_right = true,
+                'q' => inputs.rot_left = true,
+                'e' => inputs.rot_right = true,
 
                 // debug
-                'q' => break,                                       // kill game early
+                'p' => break,                                       // kill game early
                 'z' => game_tick_period *= 2,                       // slowdown tick rate
                 'x' => game_tick_period = DEFAULT_GAME_TICK_PERIOD, // reset tick rate
                 'c' => game_tick_period /= 2,                       // speed up tick rate
@@ -115,14 +134,29 @@ fn main() {
         if last_input_handled.elapsed() >= INPUT_POLL_PERIOD {
             last_input_handled = time::Instant::now();
             let mut horizontal_motion: i32 = 0;
-            if inputs.0 {
+            if inputs.move_left {
                 horizontal_motion -= 1;
             }
-            if inputs.1 {
+            if inputs.move_right {
                 horizontal_motion += 1;
             }
             game_state.move_block_horizontal(horizontal_motion);
-            inputs = (false, false);
+
+            let mut relative_rotation: i32 = 0;
+            if inputs.rot_left {
+                relative_rotation -= 1;
+            }
+            if inputs.rot_right {
+                relative_rotation += 1;
+            }
+            game_state.rotate_block(relative_rotation);
+
+            inputs = Inputs {
+                move_left: false,
+                move_right: false,
+                rot_left: false,
+                rot_right: false,
+            };
         }
 
         // Tick the game state

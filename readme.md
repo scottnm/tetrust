@@ -61,7 +61,9 @@
 
 ![Image of constrained board with game over screen](demo/8-constrained-gameover-blink.gif)
 
-- [ ] Allow tetrominos to rotate
+- [X] [Allow tetrominos to rotate](https://github.com/scottnm/tetrust/commit/44bbeee4d17255c68c0f7c96ebe29a6b6c151b2a)
+![Image of pieces rotation](demo/9-rotation.gif)
+
 - [ ] Allow clearing lines
 - [ ] Speed up pieces falling as more lines are cleared
 - [ ] Preview blocks

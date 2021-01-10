@@ -26,11 +26,14 @@ where
     settled_block_count: usize,
     // TODO: rename to something better (settled_cells?)
     settled_blocks: Box<[BlockType]>,
+    // TODO: don't have the settled_block_positions and settled_blocks vecs be independent.
+    //       make the position info implicit from the position in the settled_blocks arr
     settled_block_positions: Box<[Vec2]>,
     next_block: Block,
     active_block: Block,
     active_block_pos: Vec2,
     game_phase: GamePhase,
+    score: i32,
 }
 
 impl<TBlockTypeRand> GameState<TBlockTypeRand>
@@ -55,6 +58,7 @@ where
             active_block: Block::default(), // this block will be immediately replaced
             active_block_pos: Vec2::zero(),
             game_phase: GamePhase::StartNextBlock,
+            score: 0,
         }
     }
 
@@ -99,23 +103,33 @@ where
             GamePhase::MoveBlock => {
                 if self.has_active_block_landed() {
                     let is_block_above_board = self.active_block_pos.y < 0;
-                    self.game_phase = if is_block_above_board {
-                        GamePhase::GameOver
+                    if is_block_above_board {
+                        self.game_phase = GamePhase::GameOver
                     } else {
                         // Bake the active block into the settled cell grid.
-                        // TODO: Should this be it's own function?
-                        for cell in &translate_cells(
-                            &self.active_block.cells(),
-                            self.active_block_pos.y,
-                            self.active_block_pos.x,
-                        ) {
-                            self.settled_block_positions[self.settled_block_count] = *cell;
-                            self.settled_blocks[self.settled_block_count] =
-                                self.active_block.block_type;
-                            self.settled_block_count += 1;
+                        let mut rows_to_check = [false, false, false, false];
+                        for cell in &self.active_block.cells() {
+                            rows_to_check[cell.y as usize] = true;
                         }
 
-                        GamePhase::StartNextBlock
+                        self.settle_active_block();
+
+                        let active_block_y_offset = self.active_block_pos.y;
+                        for row in rows_to_check
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, check_row)| **check_row)
+                            .map(|(i, _)| i as i32 + active_block_y_offset)
+                        {
+                            let row_cleared = self.try_clear_row(row);
+                            if row_cleared {
+                                // TODO: what are the actual scoring rules?
+                                println!("Score!");
+                                self.score += 1;
+                            }
+                        }
+
+                        self.game_phase = GamePhase::StartNextBlock
                     }
                 } else {
                     self.active_block_pos.y += 1;
@@ -308,6 +322,40 @@ where
         );
 
         do_blocks_collide_below
+    }
+
+    fn settle_active_block(&mut self) {
+        for cell in &translate_cells(
+            &self.active_block.cells(),
+            self.active_block_pos.y,
+            self.active_block_pos.x,
+        ) {
+            self.settled_block_positions[self.settled_block_count] = *cell;
+            self.settled_blocks[self.settled_block_count] = self.active_block.block_type;
+            self.settled_block_count += 1;
+        }
+    }
+
+    fn try_clear_row(&mut self, row: i32) -> bool {
+        let cells_in_row_count = self.settled_block_positions[0..self.settled_block_count]
+            .iter()
+            .filter(|pos| pos.y == row)
+            .count();
+
+        if cells_in_row_count != self.board_width as usize {
+            return false;
+        }
+
+        // if every cell in a row was filled, clear it!
+        for i in (0..self.settled_block_count).rev() {
+            if self.settled_block_positions[i].y == row {
+                self.settled_block_positions
+                    .swap(i, self.settled_block_count - 1);
+                self.settled_blocks.swap(i, self.settled_block_count - 1);
+                self.settled_block_count -= 1;
+            }
+        }
+        true
     }
 }
 

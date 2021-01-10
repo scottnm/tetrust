@@ -148,25 +148,28 @@ fn main() {
     };
 
     let mut game_over_blit_timer = Option::<time::Instant>::None;
+    let mut game_paused = false;
 
     loop {
         // Input handling
-        if let Some(pancurses::Input::Character(ch)) = window.getch() {
+        let next_key = window.getch();
+        if let Some(pancurses::Input::Character(ch)) = next_key {
             match ch {
                 // check for movement inputs
                 'a' => inputs.move_left = true,
                 'd' => inputs.move_right = true,
-                'q' => inputs.rot_left = true,
-                'e' => inputs.rot_right = true,
+                'j' => inputs.rot_left = true,
+                'l' => inputs.rot_right = true,
 
                 // debug
-                'p' => break,                                       // kill game early
+                'q' => break,                                       // kill game early
+                'p' => game_paused = !game_paused,                  // toggle the pause state
                 'z' => game_tick_period *= 2,                       // slowdown tick rate
                 'x' => game_tick_period = DEFAULT_GAME_TICK_PERIOD, // reset tick rate
                 'c' => game_tick_period /= 2,                       // speed up tick rate
                 _ => (),
             }
-        }
+        };
 
         if last_input_handled.elapsed() >= INPUT_POLL_PERIOD {
             last_input_handled = time::Instant::now();
@@ -199,7 +202,9 @@ fn main() {
         // Tick the game state
         if last_game_tick.elapsed() >= game_tick_period {
             last_game_tick = time::Instant::now();
-            game_state.tick();
+            if !game_paused {
+                game_state.tick();
+            }
         }
 
         // Render the next frame
@@ -248,6 +253,17 @@ fn main() {
             draw_text_centered(
                 &window,
                 "Game Over",
+                BOARD_RECT.center_x(),
+                BOARD_RECT.center_y(),
+            );
+            window.attroff(pancurses::A_BLINK);
+        }
+        // If the game is paused, render pause text
+        else if game_paused {
+            window.attron(pancurses::A_BLINK);
+            draw_text_centered(
+                &window,
+                "PAUSE",
                 BOARD_RECT.center_x(),
                 BOARD_RECT.center_y(),
             );

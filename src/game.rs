@@ -9,7 +9,7 @@ struct Vec2 {
 
 #[derive(PartialEq, Eq)]
 enum GamePhase {
-    GenerateBlock,
+    StartNextBlock,
     MoveBlock,
     GameOver,
 }
@@ -31,6 +31,7 @@ where
     block_count: usize,
     blocks: Box<[Block]>,
     block_positions: Box<[Cell]>,
+    next_block: Block,
     game_phase: GamePhase,
 }
 
@@ -41,8 +42,9 @@ where
     pub fn new(
         board_width: i32,
         board_height: i32,
-        block_type_rng: TBlockTypeRand,
+        mut block_type_rng: TBlockTypeRand,
     ) -> GameState<TBlockTypeRand> {
+        let initial_block = Block::random(&mut block_type_rng);
         let max_blocks = (board_width * board_height) as usize;
         GameState {
             board_width,
@@ -51,27 +53,30 @@ where
             block_count: 0,
             blocks: (vec![Block::default(); max_blocks]).into_boxed_slice(),
             block_positions: (vec![Cell { x: 0, y: 0 }; max_blocks]).into_boxed_slice(),
-            game_phase: GamePhase::GenerateBlock,
+            next_block: initial_block,
+            game_phase: GamePhase::StartNextBlock,
         }
     }
 
     pub fn tick(&mut self) {
         match self.game_phase {
             // Add a new block to the top of the board
-            GamePhase::GenerateBlock => {
+            GamePhase::StartNextBlock => {
                 assert_eq!(self.blocks.len(), self.block_positions.len());
                 assert!(self.block_count < self.blocks.len());
 
-                let new_block = Block::random(&mut self.block_type_rng);
-                let start_col = (self.board_width - new_block.width()) / 2 - new_block.left();
-                let start_row = -new_block.height();
+                let new_next_block = Block::random(&mut self.block_type_rng);
+                let next_block = std::mem::replace(&mut self.next_block, new_next_block);
+
+                let start_col = (self.board_width - next_block.width()) / 2 - next_block.left();
+                let start_row = -next_block.height();
 
                 let start_pos = Cell {
                     x: start_col,
                     y: start_row,
                 };
 
-                self.blocks[self.block_count] = new_block;
+                self.blocks[self.block_count] = next_block;
                 self.block_positions[self.block_count] = start_pos;
                 self.block_count += 1;
                 self.game_phase = GamePhase::MoveBlock;
@@ -87,7 +92,7 @@ where
                     self.game_phase = if is_block_above_board {
                         GamePhase::GameOver
                     } else {
-                        GamePhase::GenerateBlock
+                        GamePhase::StartNextBlock
                     }
                 } else {
                     self.block_positions[active_block_id].y += 1;
@@ -107,7 +112,7 @@ where
                     self.block_positions[active_block_id].x += horizontal_motion;
                 }
             }
-            GamePhase::GenerateBlock | GamePhase::GameOver => (),
+            GamePhase::StartNextBlock | GamePhase::GameOver => (),
         }
     }
 
@@ -179,7 +184,7 @@ where
                     self.block_positions[self.block_count - 1] = kicked_pos;
                 }
             }
-            GamePhase::GenerateBlock | GamePhase::GameOver => (),
+            GamePhase::StartNextBlock | GamePhase::GameOver => (),
         }
     }
 
@@ -193,8 +198,7 @@ where
     }
 
     pub fn preview_block(&self) -> Block {
-        // TODO: actual generate a preview block
-        Block::default()
+        self.next_block
     }
 
     // NOTE (scmunro): this function was added mostly for testing purposes. If possible, I'd like

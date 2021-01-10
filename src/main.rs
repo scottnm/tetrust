@@ -4,19 +4,31 @@ mod block;
 mod game;
 mod randwrapper;
 mod tests;
+mod util;
 
 use crate::block::*;
 use crate::game::*;
 use crate::randwrapper::*;
+use crate::util::*;
 use std::time;
 
-fn render_block(window: &pancurses::Window, Cell { x: col, y: row }: Cell, block: Block) {
+fn render_block(
+    window: &pancurses::Window,
+    block_rel_pos: Cell,
+    rel_pos_offset_x: i32,
+    rel_pos_offset_y: i32,
+    block: Block,
+) {
     let sprite_char = block.sprite_char();
     let color_pair = pancurses::COLOR_PAIR(block.block_type as pancurses::chtype);
     window.attron(color_pair);
-    for cell in &block.cells() {
+    for cell_pos in &block.cells() {
         // Ok to blit block sprite even if position is OOB
-        window.mvaddch(cell.y + row, cell.x + col, sprite_char);
+        window.mvaddch(
+            cell_pos.y + block_rel_pos.y + rel_pos_offset_y,
+            cell_pos.x + block_rel_pos.x + rel_pos_offset_x,
+            sprite_char,
+        );
     }
     window.attroff(color_pair);
 }
@@ -34,11 +46,11 @@ fn setup_colors() {
     }
 }
 
-fn draw_frame(window: &pancurses::Window, left: i32, width: i32, top: i32, height: i32) {
-    let right = left + width - 1;
-    let bottom = top + height - 1;
-    assert!(left < right);
-    assert!(top < bottom);
+fn draw_frame(window: &pancurses::Window, frame_rect: &Rect) {
+    let left = frame_rect.left;
+    let top = frame_rect.top;
+    let right = frame_rect.right();
+    let bottom = frame_rect.bottom();
 
     // draw corners
     window.mvaddch(top, left, pancurses::ACS_ULCORNER());
@@ -69,32 +81,57 @@ where
 fn main() {
     let window = pancurses::initscr();
 
-    const BOARD_X_OFFSET: i32 = 1;
-    const BOARD_Y_OFFSET: i32 = 1;
-    const BOARD_DIM_WIDTH: i32 = 10;
-    const BOARD_DIM_HEIGHT: i32 = 20;
-
     const INPUT_POLL_PERIOD: time::Duration = time::Duration::from_millis(125);
     const DEFAULT_GAME_TICK_PERIOD: time::Duration = time::Duration::from_millis(250);
     let mut game_tick_period = DEFAULT_GAME_TICK_PERIOD;
 
+    const TITLE: &str = "TETRUST";
     pancurses::noecho();
     pancurses::cbreak();
     pancurses::curs_set(0);
-    pancurses::set_title("TETRUST");
+    pancurses::set_title(TITLE);
     window.nodelay(true);
     setup_colors();
 
     let mut last_game_tick = time::Instant::now();
     let mut last_input_handled = time::Instant::now();
 
-    let mut game_state = GameState::new(
-        BOARD_X_OFFSET,
-        BOARD_Y_OFFSET,
-        BOARD_DIM_WIDTH,
-        BOARD_DIM_HEIGHT,
-        ThreadRangeRng::new(),
-    );
+    const BOARD_RECT: Rect = Rect {
+        left: 1,
+        top: 1,
+        width: 10,
+        height: 20,
+    };
+
+    const BOARD_FRAME_RECT: Rect = Rect {
+        left: BOARD_RECT.left - 1,
+        top: BOARD_RECT.top - 1,
+        width: BOARD_RECT.width + 2,
+        height: BOARD_RECT.height + 2,
+    };
+
+    const TITLE_RECT: Rect = Rect {
+        left: BOARD_FRAME_RECT.right() + 2,
+        top: BOARD_FRAME_RECT.top,
+        width: (TITLE.len() + 4) as i32,
+        height: 3,
+    };
+
+    const PREVIEW_PANE_RECT: Rect = Rect {
+        left: TITLE_RECT.left,
+        top: TITLE_RECT.bottom() + 4,
+        width: 6,
+        height: 6,
+    };
+
+    const PREVIEW_RECT: Rect = Rect {
+        left: PREVIEW_PANE_RECT.left + 1,
+        top: PREVIEW_PANE_RECT.top + 1,
+        width: PREVIEW_PANE_RECT.width - 2,
+        height: PREVIEW_PANE_RECT.height - 2,
+    };
+
+    let mut game_state = GameState::new(BOARD_RECT.width, BOARD_RECT.height, ThreadRangeRng::new());
 
     struct Inputs {
         move_left: bool,
@@ -165,22 +202,37 @@ fn main() {
             game_state.tick();
         }
 
-        // Render the frame
+        // Render the next frame
         window.erase();
 
-        draw_frame(
+        // Render the tetris title
+        draw_frame(&window, &TITLE_RECT);
+        draw_text_centered(&window, TITLE, TITLE_RECT.center_x(), TITLE_RECT.center_y());
+
+        // Render next piece preview
+        draw_text_centered(
             &window,
-            BOARD_X_OFFSET - 1,
-            BOARD_DIM_WIDTH + 2,
-            BOARD_Y_OFFSET - 1,
-            BOARD_DIM_HEIGHT + 2,
+            "Next",
+            PREVIEW_PANE_RECT.center_x(),
+            PREVIEW_PANE_RECT.top - 1,
+        );
+        draw_frame(&window, &PREVIEW_PANE_RECT);
+        render_block(
+            &window,
+            Cell { x: 0, y: 0 },
+            PREVIEW_RECT.left,
+            PREVIEW_RECT.top,
+            game_state.preview_block(),
         );
 
+        // Render the board
+        draw_frame(&window, &BOARD_FRAME_RECT);
         for block_id in 0..game_state.block_count() {
             let (position, block) = game_state.block(block_id);
-            render_block(&window, position, block);
+            render_block(&window, position, BOARD_RECT.left, BOARD_RECT.top, block);
         }
 
+        // If the game is over, render the game over text
         if game_state.is_game_over() {
             const GAME_OVER_DURATION: time::Duration = time::Duration::from_secs(3);
             match game_over_blit_timer {
@@ -192,15 +244,12 @@ fn main() {
                 }
             }
 
-            const GAME_OVER_TEXT_X_CENTER: i32 = BOARD_X_OFFSET + BOARD_DIM_WIDTH / 2;
-            const GAME_OVER_TEXT_Y_CENTER: i32 = BOARD_Y_OFFSET + BOARD_DIM_HEIGHT / 2;
-
             window.attron(pancurses::A_BLINK);
             draw_text_centered(
                 &window,
                 "Game Over",
-                GAME_OVER_TEXT_X_CENTER,
-                GAME_OVER_TEXT_Y_CENTER,
+                BOARD_RECT.center_x(),
+                BOARD_RECT.center_y(),
             );
             window.attroff(pancurses::A_BLINK);
         }

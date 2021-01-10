@@ -69,13 +69,8 @@ mod tests {
         // This test gets the tetris board to a game over state and verifies that further game
         // ticks will not change the game state.
 
-        let mut game_state = GameState::new(
-            0,
-            0,
-            TEST_BOARD_WIDTH,
-            TEST_BOARD_HEIGHT,
-            ThreadRangeRng::new(),
-        );
+        let mut game_state =
+            GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, ThreadRangeRng::new());
         while !game_state.is_game_over() {
             game_state.tick();
         }
@@ -92,13 +87,8 @@ mod tests {
     fn test_game_over_on_board_exceeded() {
         // This test verifies that a game over only happens a block exceeds the board
 
-        let mut game_state = GameState::new(
-            0,
-            0,
-            TEST_BOARD_WIDTH,
-            TEST_BOARD_HEIGHT,
-            ThreadRangeRng::new(),
-        );
+        let mut game_state =
+            GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, ThreadRangeRng::new());
         while !game_state.is_game_over() {
             game_state.tick();
         }
@@ -110,12 +100,11 @@ mod tests {
         // This test generates only 'I' pieces on the far-left column of the board and verifies the
         // number of pieces it takes to fill up the board
         let mut game_state = GameState::new(
-            0,
-            0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             mocks::SingleValueRangeRng::new(BlockType::O as usize),
         );
+
         while !game_state.is_game_over() {
             game_state.tick();
         }
@@ -160,7 +149,7 @@ mod tests {
         T: RangeRng<usize>,
     {
         let original_block_count = game_state.block_count();
-        while original_block_count == game_state.block_count() {
+        while original_block_count == game_state.block_count() && !game_state.is_game_over() {
             game_state.tick();
         }
     }
@@ -168,8 +157,6 @@ mod tests {
     #[test]
     fn test_lr_collisions() {
         let mut game_state = GameState::new(
-            0,
-            0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             mocks::SingleValueRangeRng::new(BlockType::S as usize),
@@ -290,6 +277,35 @@ mod tests {
         );
         while !game_state.is_game_over() {
             game_state.tick();
+        }
+    }
+
+    #[test]
+    fn test_preview_block() {
+        let mut preview_block = BlockType::T;
+        let mut active_block = BlockType::S;
+
+        // This test generates only 'I' pieces on the far-left column of the board and verifies the
+        // number of pieces it takes to fill up the board
+        let mut game_state = GameState::new(
+            TEST_BOARD_WIDTH,
+            TEST_BOARD_HEIGHT,
+            mocks::SequenceRangeRng::new(&[preview_block as usize, active_block as usize]),
+        );
+        assert_eq!(game_state.block_count(), 0);
+        assert_eq!(game_state.preview_block().block_type, preview_block);
+
+        while !game_state.is_game_over() {
+            // tick the game at least once after making the last block fall so that the preview
+            // block becomes the active block and we get a new preview block
+            game_state.tick();
+
+            // Verify the preview and active lbock have swapped places
+            std::mem::swap(&mut preview_block, &mut active_block);
+            assert_eq!(game_state.preview_block().block_type, preview_block);
+            assert_eq!(last_block_data(&game_state).1.block_type, active_block);
+
+            fall_block(&mut game_state);
         }
     }
 }

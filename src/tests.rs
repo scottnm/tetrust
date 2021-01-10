@@ -69,13 +69,8 @@ mod tests {
         // This test gets the tetris board to a game over state and verifies that further game
         // ticks will not change the game state.
 
-        let mut game_state = GameState::new(
-            0,
-            0,
-            TEST_BOARD_WIDTH,
-            TEST_BOARD_HEIGHT,
-            ThreadRangeRng::new(),
-        );
+        let mut game_state =
+            GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, ThreadRangeRng::new());
         while !game_state.is_game_over() {
             game_state.tick();
         }
@@ -92,13 +87,8 @@ mod tests {
     fn test_game_over_on_board_exceeded() {
         // This test verifies that a game over only happens a block exceeds the board
 
-        let mut game_state = GameState::new(
-            0,
-            0,
-            TEST_BOARD_WIDTH,
-            TEST_BOARD_HEIGHT,
-            ThreadRangeRng::new(),
-        );
+        let mut game_state =
+            GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, ThreadRangeRng::new());
         while !game_state.is_game_over() {
             game_state.tick();
         }
@@ -110,12 +100,11 @@ mod tests {
         // This test generates only 'I' pieces on the far-left column of the board and verifies the
         // number of pieces it takes to fill up the board
         let mut game_state = GameState::new(
-            0,
-            0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             mocks::SingleValueRangeRng::new(BlockType::O as usize),
         );
+
         while !game_state.is_game_over() {
             game_state.tick();
         }
@@ -168,8 +157,6 @@ mod tests {
     #[test]
     fn test_lr_collisions() {
         let mut game_state = GameState::new(
-            0,
-            0,
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
             mocks::SingleValueRangeRng::new(BlockType::S as usize),

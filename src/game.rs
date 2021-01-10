@@ -25,17 +25,13 @@ pub struct GameState<TBlockTypeRand>
 where
     TBlockTypeRand: RangeRng<usize>,
 {
-    board_pos_x: i32,
-    board_pos_y: i32,
     board_width: i32,
+    board_height: i32,
     block_type_rng: TBlockTypeRand,
     block_count: usize,
     blocks: Box<[Block]>,
     block_positions: Box<[Cell]>,
     game_phase: GamePhase,
-    left_wall: Bound,
-    right_wall: Bound,
-    floor: Bound,
 }
 
 impl<TBlockTypeRand> GameState<TBlockTypeRand>
@@ -43,25 +39,19 @@ where
     TBlockTypeRand: RangeRng<usize>,
 {
     pub fn new(
-        board_pos_x: i32,
-        board_pos_y: i32,
         board_width: i32,
         board_height: i32,
         block_type_rng: TBlockTypeRand,
     ) -> GameState<TBlockTypeRand> {
         let max_blocks = (board_width * board_height) as usize;
         GameState {
-            board_pos_x,
-            board_pos_y,
             board_width,
+            board_height,
             block_type_rng,
             block_count: 0,
             blocks: (vec![Block::default(); max_blocks]).into_boxed_slice(),
             block_positions: (vec![Cell { x: 0, y: 0 }; max_blocks]).into_boxed_slice(),
             game_phase: GamePhase::GenerateBlock,
-            left_wall: Bound::LeftWall(board_pos_x - 1),
-            right_wall: Bound::RightWall(board_pos_x + board_width),
-            floor: Bound::Floor(board_pos_y + board_height),
         }
     }
 
@@ -73,9 +63,8 @@ where
                 assert!(self.block_count < self.blocks.len());
 
                 let new_block = Block::random(&mut self.block_type_rng);
-                let start_col = (self.board_width - new_block.width()) / 2 + self.board_pos_x
-                    - new_block.left();
-                let start_row = self.board_pos_y - new_block.height();
+                let start_col = (self.board_width - new_block.width()) / 2 - new_block.left();
+                let start_row = -new_block.height();
 
                 let start_pos = Cell {
                     x: start_col,
@@ -94,8 +83,8 @@ where
                 let active_block_id = self.block_count - 1;
 
                 if self.has_block_landed(active_block_id) {
-                    let is_block_oob = self.block_positions[active_block_id].y < self.board_pos_y;
-                    self.game_phase = if is_block_oob {
+                    let is_block_above_board = self.block_positions[active_block_id].y < 0;
+                    self.game_phase = if is_block_above_board {
                         GamePhase::GameOver
                     } else {
                         GamePhase::GenerateBlock
@@ -151,15 +140,10 @@ where
                 continue;
             }
 
-            if is_touching_bound(rotated_block, kicked_block_pos, self.floor) {
-                continue;
-            }
-
-            if is_touching_bound(rotated_block, kicked_block_pos, self.left_wall) {
-                continue;
-            }
-
-            if is_touching_bound(rotated_block, kicked_block_pos, self.right_wall) {
+            if is_touching_bound(rotated_block, kicked_block_pos, self.floor())
+                || is_touching_bound(rotated_block, kicked_block_pos, self.left_wall())
+                || is_touching_bound(rotated_block, kicked_block_pos, self.right_wall())
+            {
                 continue;
             }
 
@@ -217,7 +201,7 @@ where
         let is_touching_floor = is_touching_bound(
             self.blocks[block_id],
             self.block_positions[block_id],
-            self.floor,
+            self.floor(),
         );
 
         if is_touching_floor {
@@ -243,9 +227,9 @@ where
         }
 
         let wall_to_check = if horizontal_motion < 0 {
-            self.left_wall
+            self.left_wall()
         } else {
-            self.right_wall
+            self.right_wall()
         };
 
         let is_touching_wall = is_touching_bound(
@@ -276,6 +260,18 @@ where
 
     pub fn is_game_over(&self) -> bool {
         self.game_phase == GamePhase::GameOver
+    }
+
+    fn left_wall(&self) -> Bound {
+        Bound::LeftWall(-1)
+    }
+
+    fn right_wall(&self) -> Bound {
+        Bound::RightWall(self.board_width)
+    }
+
+    fn floor(&self) -> Bound {
+        Bound::Floor(self.board_height)
     }
 }
 

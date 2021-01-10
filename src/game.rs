@@ -192,6 +192,11 @@ where
         (self.block_positions[id], self.blocks[id])
     }
 
+    pub fn preview_block(&self) -> Block {
+        // TODO: actual generate a preview block
+        Block::default()
+    }
+
     // NOTE (scmunro): this function was added mostly for testing purposes. If possible, I'd like
     // to justify removing this function and even that test if necessary or find a better way to
     // do this without writing 'test only' helpers.

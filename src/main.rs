@@ -117,6 +117,20 @@ fn main() {
         height: 3,
     };
 
+    const PREVIEW_PANE_RECT: Rect = Rect {
+        left: TITLE_RECT.left,
+        top: TITLE_RECT.bottom() + 2,
+        width: 6,
+        height: 6,
+    };
+
+    const PREVIEW_RECT: Rect = Rect {
+        left: PREVIEW_PANE_RECT.left + 1,
+        top: PREVIEW_PANE_RECT.top + 1,
+        width: PREVIEW_PANE_RECT.width - 2,
+        height: PREVIEW_PANE_RECT.height - 2,
+    };
+
     let mut game_state = GameState::new(BOARD_RECT.width, BOARD_RECT.height, ThreadRangeRng::new());
 
     struct Inputs {
@@ -194,6 +208,16 @@ fn main() {
         // Render the tetris title
         draw_frame(&window, &TITLE_RECT);
         draw_text_centered(&window, TITLE, TITLE_RECT.center_x(), TITLE_RECT.center_y());
+
+        // Render next piece preview
+        draw_frame(&window, &PREVIEW_PANE_RECT);
+        render_block(
+            &window,
+            Cell { x: 0, y: 0 },
+            PREVIEW_RECT.left,
+            PREVIEW_RECT.top,
+            game_state.preview_block(),
+        );
 
         // Render the board
         draw_frame(&window, &BOARD_FRAME_RECT);

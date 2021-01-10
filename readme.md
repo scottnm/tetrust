@@ -69,7 +69,7 @@
 
 ![Image of next block showing up in preview pane](demo/10-preview.gif)
 
-- [X] [Handle pausing](https://github.com/scottnm/tetrust/commit/FILL-ME-IN)
+- [X] [Handle pausing](https://github.com/scottnm/tetrust/commit/364add645b291dd330ccb3817eae0988b9a761e3)
 
 ![Image of pause screen](demo/11-pause.gif)
 

@@ -58,6 +58,16 @@ where
         }
     }
 
+    #[cfg(test)]
+    pub fn width(&self) -> i32 {
+        self.board_width
+    }
+
+    #[cfg(test)]
+    pub fn height(&self) -> i32 {
+        self.board_height
+    }
+
     pub fn tick(&mut self) {
         match self.game_phase {
             // Add a new block to the top of the board
@@ -172,7 +182,15 @@ where
     where
         F: FnMut(BlockType, Cell),
     {
-        unimplemented!();
+        for (block, block_pos) in self.blocks[0..self.block_count - 1]
+            .iter()
+            .zip(self.block_positions[0..self.block_count - 1].iter())
+        {
+            let cell_positions = translate_cells(&block.cells(), block_pos.y, block_pos.x);
+            for cell_pos in &cell_positions {
+                op(block.block_type, *cell_pos);
+            }
+        }
     }
 
     #[cfg(test)]

@@ -239,6 +239,12 @@ fn main() {
             BOARD_RECT.center_x(),
             BOARD_RECT.center_y(),
         );
+        draw_text_centered(
+            &window,
+            "REPL CELL",
+            BOARD_RECT.center_x(),
+            BOARD_RECT.center_y() + 1,
+        );
         window.attroff(pancurses::A_BLINK);
         /*
         for block_id in 0..game_state.block_count() {

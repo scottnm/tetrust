@@ -116,48 +116,6 @@ where
         }
     }
 
-    fn try_rotate_block(
-        &self,
-        original_block_pos: Cell,
-        original_block: Block,
-        relative_rotation: i32,
-    ) -> Option<(Block, Cell)> {
-        let rotated_block = original_block.rotate(relative_rotation);
-        let kicks = original_block
-            .rot
-            .get_kick_attempts(original_block.block_type, rotated_block.rot);
-
-        for kick in &kicks {
-            let kicked_block_pos = Cell {
-                x: original_block_pos.x + kick.x,
-                y: original_block_pos.y + kick.y,
-            };
-
-            let do_blocks_collide_after_kick = do_blocks_collide(
-                rotated_block,
-                kicked_block_pos,
-                &self.blocks[0..self.block_count - 1],
-                &self.block_positions[0..self.block_count - 1],
-                Vec2 { x: 0, y: 0 },
-            );
-
-            if do_blocks_collide_after_kick {
-                continue;
-            }
-
-            if is_touching_bound(rotated_block, kicked_block_pos, self.floor())
-                || is_touching_bound(rotated_block, kicked_block_pos, self.left_wall())
-                || is_touching_bound(rotated_block, kicked_block_pos, self.right_wall())
-            {
-                continue;
-            }
-
-            return Some((rotated_block, kicked_block_pos));
-        }
-
-        None
-    }
-
     pub fn rotate_block(&mut self, relative_rotation: i32) {
         // no rotation means no rotation. noop.
         if relative_rotation == 0 {
@@ -201,7 +159,7 @@ where
         self.next_block
     }
 
-    // NOTE (scmunro): this function was added mostly for testing purposes. If possible, I'd like
+    // NOTE (scottnm): this function was added mostly for testing purposes. If possible, I'd like
     // to justify removing this function and even that test if necessary or find a better way to
     // do this without writing 'test only' helpers.
     pub fn has_block_landed(&self, block_id: usize) -> bool {
@@ -228,7 +186,11 @@ where
         do_blocks_collide_below
     }
 
-    pub fn can_block_move(&self, block_id: usize, horizontal_motion: i32) -> bool {
+    pub fn is_game_over(&self) -> bool {
+        self.game_phase == GamePhase::GameOver
+    }
+
+    fn can_block_move(&self, block_id: usize, horizontal_motion: i32) -> bool {
         assert_eq!(self.blocks.len(), self.block_positions.len());
 
         if horizontal_motion == 0 {
@@ -267,10 +229,6 @@ where
         !do_blocks_collide_side
     }
 
-    pub fn is_game_over(&self) -> bool {
-        self.game_phase == GamePhase::GameOver
-    }
-
     fn left_wall(&self) -> Bound {
         Bound::LeftWall(-1)
     }
@@ -281,6 +239,48 @@ where
 
     fn floor(&self) -> Bound {
         Bound::Floor(self.board_height)
+    }
+
+    fn try_rotate_block(
+        &self,
+        original_block_pos: Cell,
+        original_block: Block,
+        relative_rotation: i32,
+    ) -> Option<(Block, Cell)> {
+        let rotated_block = original_block.rotate(relative_rotation);
+        let kicks = original_block
+            .rot
+            .get_kick_attempts(original_block.block_type, rotated_block.rot);
+
+        for kick in &kicks {
+            let kicked_block_pos = Cell {
+                x: original_block_pos.x + kick.x,
+                y: original_block_pos.y + kick.y,
+            };
+
+            let do_blocks_collide_after_kick = do_blocks_collide(
+                rotated_block,
+                kicked_block_pos,
+                &self.blocks[0..self.block_count - 1],
+                &self.block_positions[0..self.block_count - 1],
+                Vec2 { x: 0, y: 0 },
+            );
+
+            if do_blocks_collide_after_kick {
+                continue;
+            }
+
+            if is_touching_bound(rotated_block, kicked_block_pos, self.floor())
+                || is_touching_bound(rotated_block, kicked_block_pos, self.left_wall())
+                || is_touching_bound(rotated_block, kicked_block_pos, self.right_wall())
+            {
+                continue;
+            }
+
+            return Some((rotated_block, kicked_block_pos));
+        }
+
+        None
     }
 }
 

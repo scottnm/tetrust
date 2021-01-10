@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn test_game_over_on_board_exceeded() {
-        // This test verifies that a game over only happens a block exceeds the board
+        // This test verifies that a game over only happens if a block exceeds the board
 
         let mut game_state =
             GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, ThreadRangeRng::new());

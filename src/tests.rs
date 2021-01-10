@@ -199,6 +199,7 @@ mod tests {
 
         // verify that a block can be moved right which will change its position
         assert_eq!(game_state.get_settled_piece_count(), 4); // verify that the first piece has settled
+        game_state.tick(); // generate the next block
         let distance_to_right_wall = active_block_distance_to_right_wall(&game_state);
         for _ in 0..distance_to_right_wall {
             game_state.move_block_horizontal(1);
@@ -235,6 +236,7 @@ mod tests {
         //     oo
         //      xx
         //     xx
+        game_state.tick(); // make sure the next active block is generated
         let (active_block, _) = game_state.active_block().unwrap();
         for _ in 0..active_block.width() {
             game_state.move_block_horizontal(1);

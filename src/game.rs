@@ -23,10 +23,13 @@ where
     board_width: i32,
     board_height: i32,
     block_type_rng: TBlockTypeRand,
-    block_count: usize,
-    blocks: Box<[Block]>,
-    block_positions: Box<[Vec2]>,
+    settled_block_count: usize,
+    // TODO: rename to something better (settled_cells?)
+    settled_blocks: Box<[BlockType]>,
+    settled_block_positions: Box<[Vec2]>,
     next_block: Block,
+    active_block: Block,
+    active_block_pos: Vec2,
     game_phase: GamePhase,
 }
 
@@ -45,10 +48,12 @@ where
             board_width,
             board_height,
             block_type_rng,
-            block_count: 0,
-            blocks: (vec![Block::default(); max_blocks]).into_boxed_slice(),
-            block_positions: (vec![Vec2::zero(); max_blocks]).into_boxed_slice(),
+            settled_block_count: 0,
+            settled_blocks: (vec![BlockType::I; max_blocks]).into_boxed_slice(),
+            settled_block_positions: (vec![Vec2::zero(); max_blocks]).into_boxed_slice(),
             next_block: initial_block,
+            active_block: Block::default(), // this block will be immediately replaced
+            active_block_pos: Vec2::zero(),
             game_phase: GamePhase::StartNextBlock,
         }
     }
@@ -67,40 +72,53 @@ where
         match self.game_phase {
             // Add a new block to the top of the board
             GamePhase::StartNextBlock => {
-                assert_eq!(self.blocks.len(), self.block_positions.len());
-                assert!(self.block_count < self.blocks.len());
+                assert_eq!(
+                    self.settled_blocks.len(),
+                    self.settled_block_positions.len()
+                );
+                assert!(self.settled_block_count < self.settled_blocks.len());
 
                 let new_next_block = Block::random(&mut self.block_type_rng);
-                let next_block = std::mem::replace(&mut self.next_block, new_next_block);
+                let new_active_block = std::mem::replace(&mut self.next_block, new_next_block);
 
-                let start_col = (self.board_width - next_block.width()) / 2 - next_block.left();
-                let start_row = -next_block.height();
+                let start_col =
+                    (self.board_width - new_active_block.width()) / 2 - new_active_block.left();
+                let start_row = -new_active_block.height();
 
-                let start_pos = Vec2 {
+                let new_active_block_pos = Vec2 {
                     x: start_col,
                     y: start_row,
                 };
 
-                self.blocks[self.block_count] = next_block;
-                self.block_positions[self.block_count] = start_pos;
-                self.block_count += 1;
+                self.active_block = new_active_block;
+                self.active_block_pos = new_active_block_pos;
                 self.game_phase = GamePhase::MoveBlock;
             }
 
             // Move the latest block down across the board
             GamePhase::MoveBlock => {
-                // we are always moving the last block
-                let active_block_id = self.block_count - 1;
-
-                if self.has_block_landed(active_block_id) {
-                    let is_block_above_board = self.block_positions[active_block_id].y < 0;
+                if self.has_active_block_landed() {
+                    let is_block_above_board = self.active_block_pos.y < 0;
                     self.game_phase = if is_block_above_board {
                         GamePhase::GameOver
                     } else {
+                        // Bake the active block into the settled cell grid.
+                        // TODO: Should this be it's own function?
+                        for cell in &translate_cells(
+                            &self.active_block.cells(),
+                            self.active_block_pos.y,
+                            self.active_block_pos.x,
+                        ) {
+                            self.settled_block_positions[self.settled_block_count] = *cell;
+                            self.settled_blocks[self.settled_block_count] =
+                                self.active_block.block_type;
+                            self.settled_block_count += 1;
+                        }
+
                         GamePhase::StartNextBlock
                     }
                 } else {
-                    self.block_positions[active_block_id].y += 1;
+                    self.active_block_pos.y += 1;
                 }
             }
 
@@ -112,9 +130,8 @@ where
     pub fn move_block_horizontal(&mut self, horizontal_motion: i32) {
         match self.game_phase {
             GamePhase::MoveBlock => {
-                let active_block_id = self.block_count - 1; // we are always moving the last block
-                if self.can_block_move(active_block_id, horizontal_motion) {
-                    self.block_positions[active_block_id].x += horizontal_motion;
+                if self.can_active_block_move(horizontal_motion) {
+                    self.active_block_pos.x += horizontal_motion;
                 }
             }
             GamePhase::StartNextBlock | GamePhase::GameOver => (),
@@ -129,22 +146,17 @@ where
 
         match self.game_phase {
             GamePhase::MoveBlock => {
-                // we are always updating the last block
-                let active_block = self.blocks[self.block_count - 1];
+                let active_block = self.active_block;
 
                 // O blocks can always rotate since rotating doesn't actually change their shape.
                 if active_block.block_type == BlockType::O {
                     return;
                 }
 
-                let maybe_rotated_block = self.try_rotate_block(
-                    self.block_positions[self.block_count - 1],
-                    active_block,
-                    relative_rotation,
-                );
+                let maybe_rotated_block = self.try_rotate_active_block(relative_rotation);
                 if let Some((rotated_block, kicked_pos)) = maybe_rotated_block {
-                    self.blocks[self.block_count - 1] = rotated_block;
-                    self.block_positions[self.block_count - 1] = kicked_pos;
+                    self.active_block = rotated_block;
+                    self.active_block_pos = kicked_pos;
                 }
             }
             GamePhase::StartNextBlock | GamePhase::GameOver => (),
@@ -155,15 +167,13 @@ where
         self.next_block
     }
 
+    // TODO: maybe active_block should actually be represented by an option and force the unwrap check in places
     pub fn active_block(&self) -> Option<(Block, Vec2)> {
-        if self.block_count > 0 {
-            let last_block_id = self.block_count - 1;
-            Some((
-                self.blocks[last_block_id],
-                self.block_positions[last_block_id],
-            ))
-        } else {
+        // If we are in the "StartNextBlock" phase it means that we've just placed our previous active block
+        if self.game_phase == GamePhase::StartNextBlock {
             None
+        } else {
+            Some((self.active_block, self.active_block_pos))
         }
     }
 
@@ -175,28 +185,24 @@ where
     where
         F: FnMut(BlockType, Vec2),
     {
-        if self.block_count == 0 {
-            return;
-        }
-
-        for (block, block_pos) in self.blocks[0..self.block_count - 1]
+        for (settled_cell, settled_cell_pos) in self.settled_blocks[0..self.settled_block_count]
             .iter()
-            .zip(self.block_positions[0..self.block_count - 1].iter())
+            .zip(self.settled_block_positions.iter())
         {
-            let cell_positions = translate_cells(&block.cells(), block_pos.y, block_pos.x);
-            for cell_pos in &cell_positions {
-                op(block.block_type, *cell_pos);
-            }
+            op(*settled_cell, *settled_cell_pos);
         }
     }
 
     #[cfg(test)]
     pub fn get_settled_piece_count(&self) -> usize {
-        std::cmp::max(self.block_count - 1, 0) * 4
+        self.settled_block_count
     }
 
-    fn can_block_move(&self, block_id: usize, horizontal_motion: i32) -> bool {
-        assert_eq!(self.blocks.len(), self.block_positions.len());
+    fn can_active_block_move(&self, horizontal_motion: i32) -> bool {
+        assert_eq!(
+            self.settled_blocks.len(),
+            self.settled_block_positions.len()
+        );
 
         if horizontal_motion == 0 {
             return false;
@@ -208,11 +214,8 @@ where
             self.right_wall()
         };
 
-        let is_touching_wall = is_touching_bound(
-            self.blocks[block_id],
-            self.block_positions[block_id],
-            wall_to_check,
-        );
+        let is_touching_wall =
+            is_touching_bound(self.active_block, self.active_block_pos, wall_to_check);
 
         if is_touching_wall {
             return false;
@@ -224,10 +227,9 @@ where
         };
 
         let do_blocks_collide_side = do_blocks_collide(
-            self.blocks[block_id],
-            self.block_positions[block_id],
-            &self.blocks[0..self.block_count - 1],
-            &self.block_positions[0..self.block_count - 1],
+            self.active_block,
+            self.active_block_pos,
+            &self.settled_block_positions[0..self.settled_block_count],
             motion_vec,
         );
 
@@ -246,12 +248,10 @@ where
         Bound::Floor(self.board_height)
     }
 
-    fn try_rotate_block(
-        &self,
-        original_block_pos: Vec2,
-        original_block: Block,
-        relative_rotation: i32,
-    ) -> Option<(Block, Vec2)> {
+    fn try_rotate_active_block(&self, relative_rotation: i32) -> Option<(Block, Vec2)> {
+        let original_block = self.active_block;
+        let original_block_pos = self.active_block_pos;
+
         let rotated_block = original_block.rotate(relative_rotation);
         let kicks = original_block
             .rot
@@ -266,9 +266,8 @@ where
             let do_blocks_collide_after_kick = do_blocks_collide(
                 rotated_block,
                 kicked_block_pos,
-                &self.blocks[0..self.block_count - 1],
-                &self.block_positions[0..self.block_count - 1],
-                Vec2 { x: 0, y: 0 },
+                &self.settled_block_positions[0..self.settled_block_count],
+                Vec2::zero(),
             );
 
             if do_blocks_collide_after_kick {
@@ -288,24 +287,23 @@ where
         None
     }
 
-    fn has_block_landed(&self, block_id: usize) -> bool {
-        assert_eq!(self.blocks.len(), self.block_positions.len());
-
-        let is_touching_floor = is_touching_bound(
-            self.blocks[block_id],
-            self.block_positions[block_id],
-            self.floor(),
+    fn has_active_block_landed(&self) -> bool {
+        assert_eq!(
+            self.settled_blocks.len(),
+            self.settled_block_positions.len()
         );
+
+        let is_touching_floor =
+            is_touching_bound(self.active_block, self.active_block_pos, self.floor());
 
         if is_touching_floor {
             return true;
         }
 
         let do_blocks_collide_below = do_blocks_collide(
-            self.blocks[block_id],
-            self.block_positions[block_id],
-            &self.blocks[0..self.block_count - 1],
-            &self.block_positions[0..self.block_count - 1],
+            self.active_block,
+            self.active_block_pos,
+            &self.settled_block_positions[0..self.settled_block_count],
             Vec2 { x: 0, y: 1 },
         );
 
@@ -334,29 +332,19 @@ fn is_touching_bound(block: Block, block_pos: Vec2, bound: Bound) -> bool {
 fn do_blocks_collide(
     block: Block,
     block_pos: Vec2,
-    other_blocks: &[Block],
-    other_block_positions: &[Vec2],
+    settled_cell_positions: &[Vec2],
     move_vector: Vec2,
 ) -> bool {
-    assert_eq!(other_blocks.len(), other_block_positions.len());
-
-    let block_cells = translate_cells(
+    let moved_block_cells = translate_cells(
         &block.cells(),
         block_pos.y + move_vector.y,
         block_pos.x + move_vector.x,
     );
 
-    // Only need to check for collisions against blocks that were created before this block id
-    // since all other blocks will always be higher up in the grid.
-    for (other_block, other_block_pos) in other_blocks.iter().zip(other_block_positions.iter()) {
-        let other_block_cells =
-            translate_cells(&other_block.cells(), other_block_pos.y, other_block_pos.x);
-
-        for cell in block_cells.iter() {
-            for other_cell in other_block_cells.iter() {
-                if cell == other_cell {
-                    return true;
-                }
+    for other_cell in settled_cell_positions {
+        for moved_cell in moved_block_cells.iter() {
+            if moved_cell == other_cell {
+                return true;
             }
         }
     }

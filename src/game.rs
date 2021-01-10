@@ -146,48 +146,38 @@ where
         }
     }
 
-    pub fn block_count(&self) -> usize {
-        self.block_count
-    }
-
-    pub fn block(&self, id: usize) -> (Cell, Block) {
-        assert_eq!(self.blocks.len(), self.block_positions.len());
-        (self.block_positions[id], self.blocks[id])
-    }
-
     pub fn preview_block(&self) -> Block {
         self.next_block
     }
 
-    // NOTE (scottnm): this function was added mostly for testing purposes. If possible, I'd like
-    // to justify removing this function and even that test if necessary or find a better way to
-    // do this without writing 'test only' helpers.
-    pub fn has_block_landed(&self, block_id: usize) -> bool {
-        assert_eq!(self.blocks.len(), self.block_positions.len());
-
-        let is_touching_floor = is_touching_bound(
-            self.blocks[block_id],
-            self.block_positions[block_id],
-            self.floor(),
-        );
-
-        if is_touching_floor {
-            return true;
+    #[cfg(test)]
+    pub fn active_block(&self) -> Option<(Block, Cell)> {
+        if self.block_count > 0 {
+            let last_block_id = self.block_count - 1;
+            Some((
+                self.blocks[last_block_id],
+                self.block_positions[last_block_id],
+            ))
+        } else {
+            None
         }
-
-        let do_blocks_collide_below = do_blocks_collide(
-            self.blocks[block_id],
-            self.block_positions[block_id],
-            &self.blocks[0..self.block_count - 1],
-            &self.block_positions[0..self.block_count - 1],
-            Vec2 { x: 0, y: 1 },
-        );
-
-        do_blocks_collide_below
     }
 
     pub fn is_game_over(&self) -> bool {
         self.game_phase == GamePhase::GameOver
+    }
+
+    #[cfg(test)]
+    pub fn for_each_settled_piece<F>(&self, mut op: F)
+    where
+        F: FnMut(BlockType, Cell),
+    {
+        unimplemented!();
+    }
+
+    #[cfg(test)]
+    pub fn get_settled_piece_count(&self) -> usize {
+        std::cmp::max(self.block_count - 1, 0) * 4
     }
 
     fn can_block_move(&self, block_id: usize, horizontal_motion: i32) -> bool {
@@ -281,6 +271,30 @@ where
         }
 
         None
+    }
+
+    fn has_block_landed(&self, block_id: usize) -> bool {
+        assert_eq!(self.blocks.len(), self.block_positions.len());
+
+        let is_touching_floor = is_touching_bound(
+            self.blocks[block_id],
+            self.block_positions[block_id],
+            self.floor(),
+        );
+
+        if is_touching_floor {
+            return true;
+        }
+
+        let do_blocks_collide_below = do_blocks_collide(
+            self.blocks[block_id],
+            self.block_positions[block_id],
+            &self.blocks[0..self.block_count - 1],
+            &self.block_positions[0..self.block_count - 1],
+            Vec2 { x: 0, y: 1 },
+        );
+
+        do_blocks_collide_below
     }
 }
 

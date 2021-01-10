@@ -232,10 +232,20 @@ fn main() {
 
         // Render the board
         draw_frame(&window, &BOARD_FRAME_RECT);
+        window.attron(pancurses::A_BLINK);
+        draw_text_centered(
+            &window,
+            "TODO",
+            BOARD_RECT.center_x(),
+            BOARD_RECT.center_y(),
+        );
+        window.attroff(pancurses::A_BLINK);
+        /*
         for block_id in 0..game_state.block_count() {
             let (position, block) = game_state.block(block_id);
             render_block(&window, position, BOARD_RECT.left, BOARD_RECT.top, block);
         }
+        */
 
         // If the game is over, render the game over text
         if game_state.is_game_over() {

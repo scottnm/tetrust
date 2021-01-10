@@ -258,19 +258,16 @@ impl Block {
     }
 
     pub fn top(&self) -> i32 {
-        // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
         self.cells().iter().min_by_key(|cell| cell.y).unwrap().y
     }
 
     pub fn left(&self) -> i32 {
-        // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
         self.cells().iter().min_by_key(|cell| cell.x).unwrap().x
     }
 
     pub fn width(&self) -> i32 {
-        // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
         let left_block = self.left();
         let right_block = self.cells().iter().max_by_key(|cell| cell.x).unwrap().x;
@@ -278,7 +275,6 @@ impl Block {
     }
 
     pub fn height(&self) -> i32 {
-        // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
         let top_block = self.top();
         let bottom_block = self.cells().iter().max_by_key(|cell| cell.y).unwrap().y;

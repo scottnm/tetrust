@@ -85,10 +85,11 @@ fn main() {
     const DEFAULT_GAME_TICK_PERIOD: time::Duration = time::Duration::from_millis(250);
     let mut game_tick_period = DEFAULT_GAME_TICK_PERIOD;
 
+    const TITLE: &str = "TETRUST";
     pancurses::noecho();
     pancurses::cbreak();
     pancurses::curs_set(0);
-    pancurses::set_title("TETRUST");
+    pancurses::set_title(TITLE);
     window.nodelay(true);
     setup_colors();
 
@@ -107,6 +108,13 @@ fn main() {
         top: BOARD_RECT.top - 1,
         width: BOARD_RECT.width + 2,
         height: BOARD_RECT.height + 2,
+    };
+
+    const TITLE_RECT: Rect = Rect {
+        left: BOARD_FRAME_RECT.right() + 2,
+        top: BOARD_FRAME_RECT.top,
+        width: (TITLE.len() + 4) as i32,
+        height: 3,
     };
 
     let mut game_state = GameState::new(BOARD_RECT.width, BOARD_RECT.height, ThreadRangeRng::new());
@@ -180,16 +188,21 @@ fn main() {
             game_state.tick();
         }
 
-        // Render the frame
+        // Render the next frame
         window.erase();
 
-        draw_frame(&window, &BOARD_FRAME_RECT);
+        // Render the tetris title
+        draw_frame(&window, &TITLE_RECT);
+        draw_text_centered(&window, TITLE, TITLE_RECT.center_x(), TITLE_RECT.center_y());
 
+        // Render the board
+        draw_frame(&window, &BOARD_FRAME_RECT);
         for block_id in 0..game_state.block_count() {
             let (position, block) = game_state.block(block_id);
             render_block(&window, position, BOARD_RECT.left, BOARD_RECT.top, block);
         }
 
+        // If the game is over, render the game over text
         if game_state.is_game_over() {
             const GAME_OVER_DURATION: time::Duration = time::Duration::from_secs(3);
             match game_over_blit_timer {

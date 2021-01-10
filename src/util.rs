@@ -6,23 +6,21 @@ pub struct Rect {
 }
 
 impl Rect {
-    pub fn right(&self) -> i32 {
+    pub const fn right(&self) -> i32 {
         let right = self.left + self.width - 1;
-        assert!(self.left < right);
         right
     }
 
-    pub fn bottom(&self) -> i32 {
+    pub const fn bottom(&self) -> i32 {
         let bottom = self.top + self.height - 1;
-        assert!(self.top < bottom);
         bottom
     }
 
-    pub fn center_x(&self) -> i32 {
+    pub const fn center_x(&self) -> i32 {
         self.left + self.width / 2
     }
 
-    pub fn center_y(&self) -> i32 {
+    pub const fn center_y(&self) -> i32 {
         self.top + self.height / 2
     }
 }

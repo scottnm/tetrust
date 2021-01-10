@@ -230,16 +230,13 @@ fn main() {
             game_state.preview_block(),
         );
 
-        // Render the board
+        // Render the active piece
         draw_frame(&window, &BOARD_FRAME_RECT);
-        window.attron(pancurses::A_BLINK);
-        draw_text_centered(
-            &window,
-            "TODO",
-            BOARD_RECT.center_x(),
-            BOARD_RECT.center_y(),
-        );
-        window.attroff(pancurses::A_BLINK);
+        if let Some((block, block_pos)) = game_state.active_block() {
+            render_block(&window, block_pos, BOARD_RECT.left, BOARD_RECT.top, block);
+        }
+
+        // Render the settled pieces
         /*
         for block_id in 0..game_state.block_count() {
             let (position, block) = game_state.block(block_id);

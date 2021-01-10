@@ -155,7 +155,6 @@ where
         self.next_block
     }
 
-    #[cfg(test)]
     pub fn active_block(&self) -> Option<(Block, Vec2)> {
         if self.block_count > 0 {
             let last_block_id = self.block_count - 1;

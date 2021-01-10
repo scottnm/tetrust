@@ -119,7 +119,7 @@ fn main() {
 
     const PREVIEW_PANE_RECT: Rect = Rect {
         left: TITLE_RECT.left,
-        top: TITLE_RECT.bottom() + 2,
+        top: TITLE_RECT.bottom() + 4,
         width: 6,
         height: 6,
     };
@@ -210,6 +210,12 @@ fn main() {
         draw_text_centered(&window, TITLE, TITLE_RECT.center_x(), TITLE_RECT.center_y());
 
         // Render next piece preview
+        draw_text_centered(
+            &window,
+            "Next",
+            PREVIEW_PANE_RECT.center_x(),
+            PREVIEW_PANE_RECT.top - 1,
+        );
         draw_frame(&window, &PREVIEW_PANE_RECT);
         render_block(
             &window,

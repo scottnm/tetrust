@@ -3,6 +3,7 @@ mod tests {
     use crate::block::*;
     use crate::game::*;
     use crate::randwrapper::*;
+    use crate::util::*;
 
     fn default_test_board<T: RangeRng<usize>>(block_type_rng: T) -> GameState<T> {
         const TEST_BOARD_WIDTH: i32 = 20;
@@ -109,7 +110,7 @@ mod tests {
         );
 
         let mut out_of_bounds_settled_pieces = vec![];
-        let collect_out_of_bounds_settled_pieces = |block_type: BlockType, pos: Cell| {
+        let collect_out_of_bounds_settled_pieces = |block_type: BlockType, pos: Vec2| {
             if pos.x < 0 || pos.x >= TEST_BOARD_WIDTH || pos.y < 0 || pos.y >= TEST_BOARD_HEIGHT {
                 out_of_bounds_settled_pieces.push((block_type, pos));
             }
@@ -119,7 +120,7 @@ mod tests {
         assert_eq!(out_of_bounds_settled_pieces, vec![]);
 
         let mut final_board: [[bool; 4]; 16] = [[false, false, false, false]; 16];
-        let collect_final_board = |_, pos: Cell| {
+        let collect_final_board = |_, pos: Vec2| {
             final_board[pos.y as usize][pos.x as usize] = true;
         };
         game_state.for_each_settled_piece(collect_final_board);
@@ -130,7 +131,7 @@ mod tests {
         assert!(maybe_active_block.is_some());
 
         let (_, active_block_pos) = maybe_active_block.unwrap();
-        assert_eq!(active_block_pos, Cell { x: 0, y: -2 });
+        assert_eq!(active_block_pos, Vec2 { x: 0, y: -2 });
     }
 
     fn active_block_distance_to_left_wall<T>(game_state: &GameState<T>) -> i32

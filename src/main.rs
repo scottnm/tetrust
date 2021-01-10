@@ -14,7 +14,7 @@ use std::time;
 
 fn render_block(
     window: &pancurses::Window,
-    block_rel_pos: Cell,
+    block_rel_pos: Vec2,
     rel_pos_offset_x: i32,
     rel_pos_offset_y: i32,
     block: Block,
@@ -224,7 +224,7 @@ fn main() {
         draw_frame(&window, &PREVIEW_PANE_RECT);
         render_block(
             &window,
-            Cell { x: 0, y: 0 },
+            Vec2::zero(),
             PREVIEW_RECT.left,
             PREVIEW_RECT.top,
             game_state.preview_block(),
@@ -238,12 +238,6 @@ fn main() {
             "TODO",
             BOARD_RECT.center_x(),
             BOARD_RECT.center_y(),
-        );
-        draw_text_centered(
-            &window,
-            "REPL CELL",
-            BOARD_RECT.center_x(),
-            BOARD_RECT.center_y() + 1,
         );
         window.attroff(pancurses::A_BLINK);
         /*

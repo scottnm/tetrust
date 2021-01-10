@@ -1,4 +1,5 @@
 use crate::randwrapper::*;
+use crate::util::*;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Rotation {
@@ -26,17 +27,11 @@ pub struct Block {
     pub block_type: BlockType,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Cell {
-    pub x: i32,
-    pub y: i32,
-}
-
 macro_rules! cell_array {
     ( $(($x:expr,$y:expr)),* $(,)?) => {
         [
             $(
-                Cell{x: $x, y: $y},
+                Vec2{x: $x, y: $y},
             )*
         ]
     };
@@ -84,7 +79,7 @@ impl Rotation {
         }
     }
 
-    pub fn get_kick_attempts(&self, block: BlockType, dest_rot: Rotation) -> [Cell; 5] {
+    pub fn get_kick_attempts(&self, block: BlockType, dest_rot: Rotation) -> [Vec2; 5] {
         match block {
             BlockType::O => panic!("O blocks do not need to be kicked"),
             BlockType::I => match (*self, dest_rot) {
@@ -190,7 +185,7 @@ impl Block {
         self.block_type.sprite_char()
     }
 
-    pub fn cells(&self) -> [Cell; 4] {
+    pub fn cells(&self) -> [Vec2; 4] {
         let rot = self.rot;
         match self.block_type {
             // - - - -    - - 0 -    - - - -    - 0 - -

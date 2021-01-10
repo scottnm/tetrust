@@ -1,11 +1,6 @@
 use crate::block::*;
 use crate::randwrapper::*;
-
-#[derive(PartialEq, Eq)]
-struct Vec2 {
-    x: i32,
-    y: i32,
-}
+use crate::util::*;
 
 #[derive(PartialEq, Eq)]
 enum GamePhase {
@@ -30,7 +25,7 @@ where
     block_type_rng: TBlockTypeRand,
     block_count: usize,
     blocks: Box<[Block]>,
-    block_positions: Box<[Cell]>,
+    block_positions: Box<[Vec2]>,
     next_block: Block,
     game_phase: GamePhase,
 }
@@ -52,7 +47,7 @@ where
             block_type_rng,
             block_count: 0,
             blocks: (vec![Block::default(); max_blocks]).into_boxed_slice(),
-            block_positions: (vec![Cell { x: 0, y: 0 }; max_blocks]).into_boxed_slice(),
+            block_positions: (vec![Vec2::zero(); max_blocks]).into_boxed_slice(),
             next_block: initial_block,
             game_phase: GamePhase::StartNextBlock,
         }
@@ -81,7 +76,7 @@ where
                 let start_col = (self.board_width - next_block.width()) / 2 - next_block.left();
                 let start_row = -next_block.height();
 
-                let start_pos = Cell {
+                let start_pos = Vec2 {
                     x: start_col,
                     y: start_row,
                 };
@@ -161,7 +156,7 @@ where
     }
 
     #[cfg(test)]
-    pub fn active_block(&self) -> Option<(Block, Cell)> {
+    pub fn active_block(&self) -> Option<(Block, Vec2)> {
         if self.block_count > 0 {
             let last_block_id = self.block_count - 1;
             Some((
@@ -180,7 +175,7 @@ where
     #[cfg(test)]
     pub fn for_each_settled_piece<F>(&self, mut op: F)
     where
-        F: FnMut(BlockType, Cell),
+        F: FnMut(BlockType, Vec2),
     {
         for (block, block_pos) in self.blocks[0..self.block_count - 1]
             .iter()
@@ -251,17 +246,17 @@ where
 
     fn try_rotate_block(
         &self,
-        original_block_pos: Cell,
+        original_block_pos: Vec2,
         original_block: Block,
         relative_rotation: i32,
-    ) -> Option<(Block, Cell)> {
+    ) -> Option<(Block, Vec2)> {
         let rotated_block = original_block.rotate(relative_rotation);
         let kicks = original_block
             .rot
             .get_kick_attempts(original_block.block_type, rotated_block.rot);
 
         for kick in &kicks {
-            let kicked_block_pos = Cell {
+            let kicked_block_pos = Vec2 {
                 x: original_block_pos.x + kick.x,
                 y: original_block_pos.y + kick.y,
             };
@@ -316,8 +311,8 @@ where
     }
 }
 
-fn translate_cells(cells: &[Cell; 4], row_translation: i32, col_translation: i32) -> [Cell; 4] {
-    let mut translated_cells: [Cell; 4] = *cells;
+fn translate_cells(cells: &[Vec2; 4], row_translation: i32, col_translation: i32) -> [Vec2; 4] {
+    let mut translated_cells: [Vec2; 4] = *cells;
     for cell_index in 0..translated_cells.len() {
         translated_cells[cell_index].y += row_translation;
         translated_cells[cell_index].x += col_translation;
@@ -326,7 +321,7 @@ fn translate_cells(cells: &[Cell; 4], row_translation: i32, col_translation: i32
     translated_cells
 }
 
-fn is_touching_bound(block: Block, block_pos: Cell, bound: Bound) -> bool {
+fn is_touching_bound(block: Block, block_pos: Vec2, bound: Bound) -> bool {
     match bound {
         Bound::Floor(floor) => block.top() + block_pos.y + block.height() >= floor,
         Bound::LeftWall(left) => block.left() + block_pos.x <= left + 1,
@@ -336,9 +331,9 @@ fn is_touching_bound(block: Block, block_pos: Cell, bound: Bound) -> bool {
 
 fn do_blocks_collide(
     block: Block,
-    block_pos: Cell,
+    block_pos: Vec2,
     other_blocks: &[Block],
-    other_block_positions: &[Cell],
+    other_block_positions: &[Vec2],
     move_vector: Vec2,
 ) -> bool {
     assert_eq!(other_blocks.len(), other_block_positions.len());

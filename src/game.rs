@@ -355,6 +355,14 @@ where
                 self.settled_block_count -= 1;
             }
         }
+
+        // after clearing the row, shift each position that was above that row down 1
+        for pos in self.settled_block_positions.iter_mut() {
+            if pos.y < row {
+                pos.y += 1;
+            }
+        }
+
         true
     }
 }

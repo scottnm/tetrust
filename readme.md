@@ -67,11 +67,14 @@
 
 - [X] [Preview blocks](https://github.com/scottnm/tetrust/commit/c8e859c5857bb7a48843ab7108bff9692a0370e0)
 
-![Image of preview](demo/10-preview.gif)
+![Image of next block showing up in preview pane](demo/10-preview.gif)
+
+- [X] [Handle pausing](https://github.com/scottnm/tetrust/commit/FILL-ME-IN)
+
+![Image of pause screen](demo/11-pause.gif)
 
 - [ ] Allow clearing lines
 - [ ] Speed up pieces falling as more lines are cleared
-- [ ] Handle pause
 - [ ] Handle scoring
 - [ ] Handle quick fall
 

@@ -149,7 +149,7 @@ mod tests {
         T: RangeRng<usize>,
     {
         let original_block_count = game_state.block_count();
-        while original_block_count == game_state.block_count() {
+        while original_block_count == game_state.block_count() && !game_state.is_game_over() {
             game_state.tick();
         }
     }
@@ -277,6 +277,35 @@ mod tests {
         );
         while !game_state.is_game_over() {
             game_state.tick();
+        }
+    }
+
+    #[test]
+    fn test_preview_block() {
+        let mut preview_block = BlockType::T;
+        let mut active_block = BlockType::S;
+
+        // This test generates only 'I' pieces on the far-left column of the board and verifies the
+        // number of pieces it takes to fill up the board
+        let mut game_state = GameState::new(
+            TEST_BOARD_WIDTH,
+            TEST_BOARD_HEIGHT,
+            mocks::SequenceRangeRng::new(&[preview_block as usize, active_block as usize]),
+        );
+        assert_eq!(game_state.block_count(), 0);
+        assert_eq!(game_state.preview_block().block_type, preview_block);
+
+        while !game_state.is_game_over() {
+            // tick the game at least once after making the last block fall so that the preview
+            // block becomes the active block and we get a new preview block
+            game_state.tick();
+
+            // Verify the preview and active lbock have swapped places
+            std::mem::swap(&mut preview_block, &mut active_block);
+            assert_eq!(game_state.preview_block().block_type, preview_block);
+            assert_eq!(last_block_data(&game_state).1.block_type, active_block);
+
+            fall_block(&mut game_state);
         }
     }
 }

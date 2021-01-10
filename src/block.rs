@@ -9,7 +9,6 @@ pub enum Rotation {
     Rot3,
 }
 
-// TODO (scottnm): separate out blocktype into blocktype and blockvisuals and blockdata (orientation+cells)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BlockType {
     I = 1, // NOTE (scottnm): if our enum starts at 0, init_pair doesn't seem to function. Needs investigation

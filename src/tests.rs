@@ -1,3 +1,5 @@
+// TODO: need to add tests for scoring
+// TODO: need to add tests for rotation kicks
 #[cfg(test)]
 mod tests {
     use crate::block::*;

@@ -65,7 +65,7 @@
 
 ![Image of pieces rotation](demo/09-rotation.gif)
 
-- [X] [Preview blocks](https://github.com/scottnm/tetrust/commit/FILL-ME-IN)
+- [X] [Preview blocks](https://github.com/scottnm/tetrust/commit/c8e859c5857bb7a48843ab7108bff9692a0370e0)
 
 ![Image of preview](demo/10-preview.gif)
 

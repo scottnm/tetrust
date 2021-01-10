@@ -12,6 +12,24 @@ use crate::randwrapper::*;
 use crate::util::*;
 use std::time;
 
+fn render_cell(
+    window: &pancurses::Window,
+    cell_rel_pos: Vec2,
+    rel_pos_offset_x: i32,
+    rel_pos_offset_y: i32,
+    block_type: BlockType,
+) {
+    let sprite_char = block_type.sprite_char();
+    let color_pair = pancurses::COLOR_PAIR(block_type as pancurses::chtype);
+    window.attron(color_pair);
+    window.mvaddch(
+        cell_rel_pos.y + rel_pos_offset_y,
+        cell_rel_pos.x + rel_pos_offset_x,
+        sprite_char,
+    );
+    window.attroff(color_pair);
+}
+
 fn render_block(
     window: &pancurses::Window,
     block_rel_pos: Vec2,
@@ -237,12 +255,15 @@ fn main() {
         }
 
         // Render the settled pieces
-        /*
-        for block_id in 0..game_state.block_count() {
-            let (position, block) = game_state.block(block_id);
-            render_block(&window, position, BOARD_RECT.left, BOARD_RECT.top, block);
-        }
-        */
+        game_state.for_each_settled_piece(|block_type: BlockType, cell_pos: Vec2| {
+            render_cell(
+                &window,
+                cell_pos,
+                BOARD_RECT.left,
+                BOARD_RECT.top,
+                block_type,
+            );
+        });
 
         // If the game is over, render the game over text
         if game_state.is_game_over() {

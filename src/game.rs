@@ -171,11 +171,14 @@ where
         self.game_phase == GamePhase::GameOver
     }
 
-    #[cfg(test)]
     pub fn for_each_settled_piece<F>(&self, mut op: F)
     where
         F: FnMut(BlockType, Vec2),
     {
+        if self.block_count == 0 {
+            return;
+        }
+
         for (block, block_pos) in self.blocks[0..self.block_count - 1]
             .iter()
             .zip(self.block_positions[0..self.block_count - 1].iter())

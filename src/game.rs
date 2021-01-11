@@ -33,7 +33,7 @@ where
     active_block: Block,
     active_block_pos: Vec2,
     game_phase: GamePhase,
-    score: i32,
+    score: usize,
 }
 
 impl<TBlockTypeRand> GameState<TBlockTypeRand>
@@ -124,7 +124,6 @@ where
                             let row_cleared = self.try_clear_row(row);
                             if row_cleared {
                                 // TODO: what are the actual scoring rules?
-                                println!("Score!");
                                 self.score += 1;
                             }
                         }
@@ -193,6 +192,10 @@ where
 
     pub fn is_game_over(&self) -> bool {
         self.game_phase == GamePhase::GameOver
+    }
+
+    pub fn score(&self) -> usize {
+        self.score
     }
 
     pub fn for_each_settled_piece<F>(&self, mut op: F)

@@ -135,7 +135,7 @@ fn main() {
         height: 3,
     };
 
-    const PREVIEW_PANE_RECT: Rect = Rect {
+    const PREVIEW_FRAME_RECT: Rect = Rect {
         left: TITLE_RECT.left,
         top: TITLE_RECT.bottom() + 4,
         width: 6,
@@ -143,10 +143,17 @@ fn main() {
     };
 
     const PREVIEW_RECT: Rect = Rect {
-        left: PREVIEW_PANE_RECT.left + 1,
-        top: PREVIEW_PANE_RECT.top + 1,
-        width: PREVIEW_PANE_RECT.width - 2,
-        height: PREVIEW_PANE_RECT.height - 2,
+        left: PREVIEW_FRAME_RECT.left + 1,
+        top: PREVIEW_FRAME_RECT.top + 1,
+        width: PREVIEW_FRAME_RECT.width - 2,
+        height: PREVIEW_FRAME_RECT.height - 2,
+    };
+
+    const SCORE_FRAME_RECT: Rect = Rect {
+        left: PREVIEW_FRAME_RECT.left,
+        top: PREVIEW_FRAME_RECT.bottom() + 4,
+        width: 14,
+        height: 3,
     };
 
     let mut game_state = GameState::new(BOARD_RECT.width, BOARD_RECT.height, ThreadRangeRng::new());
@@ -236,10 +243,10 @@ fn main() {
         draw_text_centered(
             &window,
             "Next",
-            PREVIEW_PANE_RECT.center_x(),
-            PREVIEW_PANE_RECT.top - 1,
+            PREVIEW_FRAME_RECT.center_x(),
+            PREVIEW_FRAME_RECT.top - 1,
         );
-        draw_frame(&window, &PREVIEW_PANE_RECT);
+        draw_frame(&window, &PREVIEW_FRAME_RECT);
         render_block(
             &window,
             Vec2::zero(),
@@ -247,6 +254,15 @@ fn main() {
             PREVIEW_RECT.top,
             game_state.preview_block(),
         );
+
+        // Render the score pane
+        draw_text_centered(
+            &window,
+            &format!("Score: {:05}", game_state.score()),
+            SCORE_FRAME_RECT.center_x(),
+            SCORE_FRAME_RECT.center_y(),
+        );
+        draw_frame(&window, &SCORE_FRAME_RECT);
 
         // Render the active piece
         draw_frame(&window, &BOARD_FRAME_RECT);

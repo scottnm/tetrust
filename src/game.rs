@@ -151,37 +151,10 @@ where
                         self.game_phase = GamePhase::GameOver
                     } else {
                         // Bake the active block into the settled cell grid.
-                        let mut rows_to_check = [false, false, false, false];
-                        for cell in &self.active_block.cells() {
-                            rows_to_check[cell.y as usize] = true;
-                        }
-
                         self.settle_active_block();
 
-                        let mut rows_cleared = 0;
-                        let active_block_y_offset = self.active_block_pos.y;
-                        for row in rows_to_check
-                            .iter()
-                            .enumerate()
-                            .filter(|(_, check_row)| **check_row)
-                            .map(|(i, _)| i as i32 + active_block_y_offset)
-                        {
-                            let row_cleared = self.try_clear_row(row);
-                            if row_cleared {
-                                // TODO: what are the actual scoring rules?
-                                rows_cleared += 1;
-                            }
-                        }
-
-                        self.score += match rows_cleared {
-                            0 => 0,
-                            1 => 40,
-                            2 => 100,
-                            3 => 300,
-                            4 => 1200,
-                            _ => panic!("There is no way to clear more than 4 lines at once!"),
-                        };
-
+                        let num_rows_cleared = self.clear_rows(self.active_block_pos.y);
+                        self.score += Self::calculate_clear_score(num_rows_cleared);
                         self.game_phase = GamePhase::StartNextBlock
                     }
                 } else {
@@ -393,6 +366,28 @@ where
         }
     }
 
+    fn clear_rows(&mut self, start_row: i32) -> usize {
+        let mut rows_to_check = [false, false, false, false];
+        for cell in &self.active_block.cells() {
+            rows_to_check[cell.y as usize] = true;
+        }
+
+        let mut rows_cleared = 0;
+        for row in rows_to_check
+            .iter()
+            .enumerate()
+            .filter(|(_, check_row)| **check_row)
+            .map(|(i, _)| i as i32 + start_row)
+        {
+            let row_cleared = self.try_clear_row(row);
+            if row_cleared {
+                rows_cleared += 1;
+            }
+        }
+
+        rows_cleared
+    }
+
     fn try_clear_row(&mut self, row: i32) -> bool {
         let cells_in_row_count = self.settled_block_positions[0..self.settled_block_count]
             .iter()
@@ -421,6 +416,17 @@ where
         }
 
         true
+    }
+
+    fn calculate_clear_score(num_cleared_lines: usize) -> usize {
+        match num_cleared_lines {
+            0 => 0,
+            1 => 40,
+            2 => 100,
+            3 => 300,
+            4 => 1200,
+            _ => panic!("There is no way to clear more than 4 lines at once!"),
+        }
     }
 }
 

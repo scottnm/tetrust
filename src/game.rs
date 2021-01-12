@@ -23,12 +23,7 @@ where
     board_width: i32,
     board_height: i32,
     block_type_rng: TBlockTypeRand,
-    settled_block_count: usize,
-    // TODO: rename to something better (settled_cells?)
-    settled_blocks: Box<[BlockType]>,
-    // TODO: don't have the settled_block_positions and settled_blocks vecs be independent.
-    //       make the position info implicit from the position in the settled_blocks arr
-    settled_block_positions: Box<[Vec2]>,
+    settled_cells: Box<[Option<BlockType>]>,
     next_block: Block,
     active_block: Block,
     active_block_pos: Vec2,
@@ -51,9 +46,7 @@ where
             board_width,
             board_height,
             block_type_rng,
-            settled_block_count: 0,
-            settled_blocks: (vec![BlockType::I; max_blocks]).into_boxed_slice(),
-            settled_block_positions: (vec![Vec2::zero(); max_blocks]).into_boxed_slice(),
+            settled_cells: (vec![None; max_blocks]).into_boxed_slice(),
             next_block: initial_block,
             active_block: Block::default(), // this block will be immediately replaced
             active_block_pos: Vec2::zero(),
@@ -75,18 +68,11 @@ where
 
         let max_blocks = board.len() * board[0].len();
 
-        let mut settled_blocks = vec![BlockType::I; max_blocks];
-        let mut settled_block_positions = vec![Vec2::zero(); max_blocks];
-        let mut settled_block_count = 0;
+        let mut settled_cells = vec![None; max_blocks];
         for (row_index, row) in board.iter().enumerate() {
             for (col_index, cell) in row.iter().enumerate() {
                 if *cell {
-                    settled_blocks[settled_block_count] = BlockType::I;
-                    settled_block_positions[settled_block_count] = Vec2 {
-                        x: col_index as i32,
-                        y: row_index as i32,
-                    };
-                    settled_block_count += 1;
+                    settled_cells[width * row_index + col_index] = Some(BlockType::I);
                 }
             }
         }
@@ -95,9 +81,7 @@ where
             board_width: width as i32,
             board_height: board.len() as i32,
             block_type_rng,
-            settled_block_count,
-            settled_blocks: settled_blocks.into_boxed_slice(),
-            settled_block_positions: settled_block_positions.into_boxed_slice(),
+            settled_cells: settled_cells.into_boxed_slice(),
             next_block: Block::default(),
             active_block,
             active_block_pos,
@@ -120,12 +104,6 @@ where
         match self.game_phase {
             // Add a new block to the top of the board
             GamePhase::StartNextBlock => {
-                assert_eq!(
-                    self.settled_blocks.len(),
-                    self.settled_block_positions.len()
-                );
-                assert!(self.settled_block_count < self.settled_blocks.len());
-
                 let new_next_block = Block::random(&mut self.block_type_rng);
                 let new_active_block = std::mem::replace(&mut self.next_block, new_next_block);
 
@@ -229,25 +207,25 @@ where
     where
         F: FnMut(BlockType, Vec2),
     {
-        for (settled_cell, settled_cell_pos) in self.settled_blocks[0..self.settled_block_count]
-            .iter()
-            .zip(self.settled_block_positions.iter())
-        {
-            op(*settled_cell, *settled_cell_pos);
+        for row in 0..self.board_height {
+            for col in 0..self.board_width {
+                if let Some(settled_cell) = self.settled_cells[self.cell_index(col, row)] {
+                    op(settled_cell, Vec2 { x: col, y: row });
+                }
+            }
         }
     }
 
     #[cfg(test)]
     pub fn get_settled_piece_count(&self) -> usize {
-        self.settled_block_count
+        self.settled_cells.iter().filter(|c| c.is_some()).count()
+    }
+
+    fn cell_index(&self, x: i32, y: i32) -> usize {
+        (self.board_width * y + x) as usize
     }
 
     fn can_active_block_move(&self, horizontal_motion: i32) -> bool {
-        assert_eq!(
-            self.settled_blocks.len(),
-            self.settled_block_positions.len()
-        );
-
         if horizontal_motion == 0 {
             return false;
         }
@@ -270,14 +248,13 @@ where
             y: 0,
         };
 
-        let do_blocks_collide_side = do_blocks_collide(
+        let will_block_collide = self.does_block_collide_with_settled_blocks(
             self.active_block,
             self.active_block_pos,
-            &self.settled_block_positions[0..self.settled_block_count],
             motion_vec,
         );
 
-        !do_blocks_collide_side
+        !will_block_collide
     }
 
     fn left_wall(&self) -> Bound {
@@ -307,14 +284,13 @@ where
                 y: original_block_pos.y + kick.y,
             };
 
-            let do_blocks_collide_after_kick = do_blocks_collide(
+            let does_block_collide_after_kick = self.does_block_collide_with_settled_blocks(
                 rotated_block,
                 kicked_block_pos,
-                &self.settled_block_positions[0..self.settled_block_count],
                 Vec2::zero(),
             );
 
-            if do_blocks_collide_after_kick {
+            if does_block_collide_after_kick {
                 continue;
             }
 
@@ -332,11 +308,6 @@ where
     }
 
     fn has_active_block_landed(&self) -> bool {
-        assert_eq!(
-            self.settled_blocks.len(),
-            self.settled_block_positions.len()
-        );
-
         let is_touching_floor =
             is_touching_bound(self.active_block, self.active_block_pos, self.floor());
 
@@ -344,14 +315,13 @@ where
             return true;
         }
 
-        let do_blocks_collide_below = do_blocks_collide(
+        let does_block_collide_below = self.does_block_collide_with_settled_blocks(
             self.active_block,
             self.active_block_pos,
-            &self.settled_block_positions[0..self.settled_block_count],
             Vec2 { x: 0, y: 1 },
         );
 
-        do_blocks_collide_below
+        does_block_collide_below
     }
 
     fn settle_active_block(&mut self) {
@@ -360,9 +330,9 @@ where
             self.active_block_pos.y,
             self.active_block_pos.x,
         ) {
-            self.settled_block_positions[self.settled_block_count] = *cell;
-            self.settled_blocks[self.settled_block_count] = self.active_block.block_type;
-            self.settled_block_count += 1;
+            let cell = &mut self.settled_cells[self.cell_index(cell.x, cell.y)];
+            assert!(cell.is_none());
+            *cell = Some(self.active_block.block_type);
         }
     }
 
@@ -389,29 +359,30 @@ where
     }
 
     fn try_clear_row(&mut self, row: i32) -> bool {
-        let cells_in_row_count = self.settled_block_positions[0..self.settled_block_count]
+        let row_start = self.cell_index(0, row);
+        let row_end = self.cell_index(self.board_width, row);
+        let cells_in_row_count = self.settled_cells[row_start..row_end]
             .iter()
-            .filter(|pos| pos.y == row)
+            .filter(|c| c.is_some())
             .count();
 
         if cells_in_row_count != self.board_width as usize {
             return false;
         }
 
-        // if every cell in a row was filled, clear it!
-        for i in (0..self.settled_block_count).rev() {
-            if self.settled_block_positions[i].y == row {
-                self.settled_block_positions
-                    .swap(i, self.settled_block_count - 1);
-                self.settled_blocks.swap(i, self.settled_block_count - 1);
-                self.settled_block_count -= 1;
-            }
+        // Clear out the row
+        for cell in self.settled_cells[row_start..row_end].iter_mut() {
+            *cell = None;
         }
 
-        // after clearing the row, shift each position that was above that row down 1
-        for pos in self.settled_block_positions.iter_mut() {
-            if pos.y < row {
-                pos.y += 1;
+        // TODO: this could be more efficient if instead of bubbling up we just did a single shift copy
+        // shift the cleared out row up
+        for preceding_row in (0..row).rev() {
+            for col in 0..self.board_width {
+                let preceding_row_cell_index = self.cell_index(col, preceding_row);
+                let next_row_cell_index = self.cell_index(col, preceding_row + 1);
+                self.settled_cells
+                    .swap(preceding_row_cell_index, next_row_cell_index);
             }
         }
 
@@ -427,6 +398,36 @@ where
             4 => 1200,
             _ => panic!("There is no way to clear more than 4 lines at once!"),
         }
+    }
+    fn does_block_collide_with_settled_blocks(
+        &self,
+        block: Block,
+        block_pos: Vec2,
+        move_vector: Vec2,
+    ) -> bool {
+        let moved_block_cells = translate_cells(
+            &block.cells(),
+            block_pos.y + move_vector.y,
+            block_pos.x + move_vector.x,
+        );
+
+        fn in_ex_range(v: i32, lower: i32, upper: i32) -> bool {
+            v >= lower && v < upper
+        }
+        for moved_block_cell in &moved_block_cells {
+            if !in_ex_range(moved_block_cell.x, 0, self.board_width)
+                || !in_ex_range(moved_block_cell.y, 0, self.board_height)
+            {
+                continue;
+            }
+
+            if self.settled_cells[self.cell_index(moved_block_cell.x, moved_block_cell.y)].is_some()
+            {
+                return true;
+            }
+        }
+
+        false
     }
 }
 
@@ -446,27 +447,4 @@ fn is_touching_bound(block: Block, block_pos: Vec2, bound: Bound) -> bool {
         Bound::LeftWall(left) => block.left() + block_pos.x <= left + 1,
         Bound::RightWall(right) => block.left() + block_pos.x + block.width() >= right,
     }
-}
-
-fn do_blocks_collide(
-    block: Block,
-    block_pos: Vec2,
-    settled_cell_positions: &[Vec2],
-    move_vector: Vec2,
-) -> bool {
-    let moved_block_cells = translate_cells(
-        &block.cells(),
-        block_pos.y + move_vector.y,
-        block_pos.x + move_vector.x,
-    );
-
-    for other_cell in settled_cell_positions {
-        for moved_cell in moved_block_cells.iter() {
-            if moved_cell == other_cell {
-                return true;
-            }
-        }
-    }
-
-    false
 }

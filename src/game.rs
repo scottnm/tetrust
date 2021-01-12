@@ -63,6 +63,50 @@ where
     }
 
     #[cfg(test)]
+    pub fn make_from_seed(
+        board: &[Vec<bool>],
+        active_block: Block,
+        active_block_pos: Vec2,
+        score: usize,
+        block_type_rng: TBlockTypeRand,
+    ) -> Self {
+        assert!(!board.is_empty());
+        let width = board[0].len();
+
+        let max_blocks = board.len() * board[0].len();
+
+        let mut settled_blocks = vec![BlockType::I; max_blocks];
+        let mut settled_block_positions = vec![Vec2::zero(); max_blocks];
+        let mut settled_block_count = 0;
+        for (row_index, row) in board.iter().enumerate() {
+            for (col_index, cell) in row.iter().enumerate() {
+                if *cell {
+                    settled_blocks[settled_block_count] = BlockType::I;
+                    settled_block_positions[settled_block_count] = Vec2 {
+                        x: col_index as i32,
+                        y: row_index as i32,
+                    };
+                    settled_block_count += 1;
+                }
+            }
+        }
+
+        GameState {
+            board_width: width as i32,
+            board_height: board.len() as i32,
+            block_type_rng,
+            settled_block_count,
+            settled_blocks: settled_blocks.into_boxed_slice(),
+            settled_block_positions: settled_block_positions.into_boxed_slice(),
+            next_block: Block::default(),
+            active_block,
+            active_block_pos,
+            game_phase: GamePhase::MoveBlock,
+            score,
+        }
+    }
+
+    #[cfg(test)]
     pub fn width(&self) -> i32 {
         self.board_width
     }

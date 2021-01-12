@@ -13,6 +13,49 @@ mod tests {
         GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, block_type_rng)
     }
 
+    fn test_board_from_seed(
+        board: &[Vec<bool>],
+        active_block: Block,
+        active_block_pos: Vec2,
+        score: usize,
+    ) -> GameState<ThreadRangeRng> {
+        GameState::make_from_seed(
+            board,
+            active_block,
+            active_block_pos,
+            score,
+            ThreadRangeRng::new(),
+        )
+    }
+
+    #[allow(dead_code)]
+    fn print_board<T: RangeRng<usize>>(game_state: &GameState<T>) {
+        let mut board = vec![vec!['`'; game_state.width() as usize]; game_state.height() as usize];
+
+        let fill_in_board = |block_type: BlockType, pos: Vec2| {
+            board[pos.y as usize][pos.x as usize] = block_type.sprite_char();
+        };
+
+        game_state.for_each_settled_piece(fill_in_board);
+
+        for _ in 0..game_state.width() {
+            print!("-");
+        }
+        print!("\n");
+
+        for row in &board {
+            for cell in row {
+                print!("{}", cell);
+            }
+            print!("\n");
+        }
+
+        for _ in 0..game_state.width() {
+            print!("-");
+        }
+        print!("\n");
+    }
+
     fn gen_wrapper<T: PartialOrd>(rng: &mut dyn RangeRng<T>, lower: T, upper: T) -> T {
         rng.gen_range(lower, upper)
     }
@@ -328,5 +371,124 @@ mod tests {
 
             fall_block(&mut game_state);
         }
+    }
+
+    #[test]
+    fn test_score_1_line() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot2,
+            block_type: BlockType::T,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 200;
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+        assert_eq!(game_state.score(), start_score);
+
+        fall_block(&mut game_state);
+        assert_eq!(game_state.score(), start_score + 40);
+    }
+
+    #[test]
+    fn test_score_2_line() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot2,
+            block_type: BlockType::T,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 200;
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+        assert_eq!(game_state.score(), start_score);
+
+        fall_block(&mut game_state);
+        assert_eq!(game_state.score(), start_score + 40);
+        unimplemented!();
+    }
+
+    #[test]
+    fn test_score_3_line() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot2,
+            block_type: BlockType::T,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 200;
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+        assert_eq!(game_state.score(), start_score);
+
+        fall_block(&mut game_state);
+        assert_eq!(game_state.score(), start_score + 40);
+        unimplemented!();
+    }
+
+    #[test]
+    fn test_score_4_line() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot2,
+            block_type: BlockType::T,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 200;
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+        assert_eq!(game_state.score(), start_score);
+
+        fall_block(&mut game_state);
+        assert_eq!(game_state.score(), start_score + 40);
+        unimplemented!();
     }
 }

@@ -175,7 +175,10 @@ where
 
                         self.score += match rows_cleared {
                             0 => 0,
-                            1 | 2 | 3 | 4 => 40,
+                            1 => 40,
+                            2 => 100,
+                            3 => 300,
+                            4 => 1200,
                             _ => panic!("There is no way to clear more than 4 lines at once!"),
                         };
 

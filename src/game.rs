@@ -158,6 +158,7 @@ where
 
                         self.settle_active_block();
 
+                        let mut rows_cleared = 0;
                         let active_block_y_offset = self.active_block_pos.y;
                         for row in rows_to_check
                             .iter()
@@ -168,9 +169,15 @@ where
                             let row_cleared = self.try_clear_row(row);
                             if row_cleared {
                                 // TODO: what are the actual scoring rules?
-                                self.score += 1;
+                                rows_cleared += 1;
                             }
                         }
+
+                        self.score += match rows_cleared {
+                            0 => 0,
+                            1 | 2 | 3 | 4 => 40,
+                            _ => panic!("There is no way to clear more than 4 lines at once!"),
+                        };
 
                         self.game_phase = GamePhase::StartNextBlock
                     }

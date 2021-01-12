@@ -1,4 +1,3 @@
-// TODO: need to add tests for scoring
 // TODO: need to add tests for rotation kicks
 #[cfg(test)]
 mod tests {
@@ -412,13 +411,13 @@ mod tests {
             vec![false, false, false, false, false, false],
             vec![false, false, false, false, false, false],
             vec![false, false, false, false, false, false],
-            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
             vec![true, false, true, true, true, true],
         ];
 
         let active_block = Block {
-            rot: Rotation::Rot2,
-            block_type: BlockType::T,
+            rot: Rotation::Rot3,
+            block_type: BlockType::L,
         };
         let active_block_pos = Vec2::zero();
 
@@ -428,8 +427,7 @@ mod tests {
         assert_eq!(game_state.score(), start_score);
 
         fall_block(&mut game_state);
-        assert_eq!(game_state.score(), start_score + 40);
-        unimplemented!();
+        assert_eq!(game_state.score(), start_score + 100);
     }
 
     #[test]
@@ -441,14 +439,14 @@ mod tests {
             vec![false, false, false, false, false, false],
             vec![false, false, false, false, false, false],
             vec![false, false, false, false, false, false],
-            vec![false, false, false, false, false, false],
-            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
             vec![true, false, true, true, true, true],
         ];
 
         let active_block = Block {
-            rot: Rotation::Rot2,
-            block_type: BlockType::T,
+            rot: Rotation::Rot3,
+            block_type: BlockType::I,
         };
         let active_block_pos = Vec2::zero();
 
@@ -458,8 +456,7 @@ mod tests {
         assert_eq!(game_state.score(), start_score);
 
         fall_block(&mut game_state);
-        assert_eq!(game_state.score(), start_score + 40);
-        unimplemented!();
+        assert_eq!(game_state.score(), start_score + 300);
     }
 
     #[test]
@@ -470,15 +467,15 @@ mod tests {
             vec![false, false, false, false, false, false],
             vec![false, false, false, false, false, false],
             vec![false, false, false, false, false, false],
-            vec![false, false, false, false, false, false],
-            vec![false, false, false, false, false, false],
-            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
             vec![true, false, true, true, true, true],
         ];
 
         let active_block = Block {
-            rot: Rotation::Rot2,
-            block_type: BlockType::T,
+            rot: Rotation::Rot3,
+            block_type: BlockType::I,
         };
         let active_block_pos = Vec2::zero();
 
@@ -488,7 +485,6 @@ mod tests {
         assert_eq!(game_state.score(), start_score);
 
         fall_block(&mut game_state);
-        assert_eq!(game_state.score(), start_score + 40);
-        unimplemented!();
+        assert_eq!(game_state.score(), start_score + 1200);
     }
 }

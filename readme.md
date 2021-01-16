@@ -77,7 +77,7 @@
 
 ![Image of scoring](demo/12-scoring.gif)
 
-- [X] [Speed up pieces falling as more lines are cleared](https://github.com/scottnm/tetrust/commit/FILLMEIN)
+- [X] [Speed up pieces falling as more lines are cleared](https://github.com/scottnm/tetrust/commit/79aae07b823af30b06091c22f96c8760d80cdb60)
 
 ![Image of increased fall speed](demo/13-fallspeed.gif)
 

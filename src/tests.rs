@@ -6,6 +6,12 @@ mod tests {
     use crate::randwrapper::*;
     use crate::util::*;
 
+    // TODO: remove template parameter from game state. it just isn't needed that often for all of this type shenanigans
+    fn tick<T: RangeRng<usize>>(game_state: &mut GameState<T>) {
+        const STEADY_TICK: std::time::Duration = std::time::Duration::from_millis(250);
+        game_state.update(STEADY_TICK);
+    }
+
     fn default_test_board<T: RangeRng<usize>>(block_type_rng: T) -> GameState<T> {
         const TEST_BOARD_WIDTH: i32 = 20;
         const TEST_BOARD_HEIGHT: i32 = 30;
@@ -87,12 +93,12 @@ mod tests {
 
         let mut game_state = default_test_board(ThreadRangeRng::new());
         while !game_state.is_game_over() {
-            game_state.tick();
+            tick(&mut game_state);
         }
 
         let expected_final_settled_piece_count = game_state.get_settled_piece_count();
         for _ in 0..5 {
-            game_state.tick();
+            tick(&mut game_state);
         }
         assert_eq!(
             game_state.get_settled_piece_count(),
@@ -134,7 +140,7 @@ mod tests {
         );
 
         while !game_state.is_game_over() {
-            game_state.tick();
+            tick(&mut game_state);
         }
 
         /*
@@ -210,7 +216,7 @@ mod tests {
         while original_settled_piece_count == game_state.get_settled_piece_count()
             && !game_state.is_game_over()
         {
-            game_state.tick();
+            tick(game_state);
         }
     }
 
@@ -221,7 +227,7 @@ mod tests {
 
         // generate first block
         assert!(game_state.active_block().is_none());
-        game_state.tick();
+        tick(&mut game_state);
         assert!(game_state.active_block().is_some());
 
         // verify that a block can be moved left which will change its position
@@ -245,7 +251,7 @@ mod tests {
 
         // verify that a block can be moved right which will change its position
         assert_eq!(game_state.get_settled_piece_count(), 4); // verify that the first piece has settled
-        game_state.tick(); // generate the next block
+        tick(&mut game_state); // generate the next block
         let distance_to_right_wall = active_block_distance_to_right_wall(&game_state);
         for _ in 0..distance_to_right_wall {
             game_state.move_block_horizontal(1);
@@ -282,7 +288,7 @@ mod tests {
         //     oo
         //      xx
         //     xx
-        game_state.tick(); // make sure the next active block is generated
+        tick(&mut game_state); // make sure the next active block is generated
         let (active_block, _) = game_state.active_block().unwrap();
         for _ in 0..active_block.width() {
             game_state.move_block_horizontal(1);
@@ -295,7 +301,7 @@ mod tests {
         //      xx$$
         //     xx
         for _ in 0..(game_state.height() - 1) {
-            game_state.tick();
+            tick(&mut game_state);
         }
 
         let (active_block, active_block_pos) = game_state.active_block().unwrap();
@@ -319,7 +325,7 @@ mod tests {
         //     oo
         //      xx $$
         //     xx $$
-        game_state.tick();
+        tick(&mut game_state);
         let (active_block, active_block_pos) = game_state.active_block().unwrap();
         assert_eq!(
             active_block_pos.y,
@@ -339,7 +345,7 @@ mod tests {
             left_wall_distance_before - 1
         );
         while !game_state.is_game_over() {
-            game_state.tick();
+            tick(&mut game_state);
         }
     }
 
@@ -360,7 +366,7 @@ mod tests {
         while !game_state.is_game_over() {
             // tick the game at least once after making the last block fall so that the preview
             // block becomes the active block and we get a new preview block
-            game_state.tick();
+            tick(&mut game_state);
 
             // Verify the preview and active lbock have swapped places
             std::mem::swap(&mut preview_block, &mut active_block);

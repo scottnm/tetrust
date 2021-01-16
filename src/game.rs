@@ -237,15 +237,9 @@ impl GameState {
     }
 
     fn get_move_period(&self) -> std::time::Duration {
-        // TODO: increase max level
-        const MOVE_PERIOD_PER_LEVEL: [std::time::Duration; 3] = [
-            std::time::Duration::from_millis(250),
-            std::time::Duration::from_millis(125),
-            std::time::Duration::from_millis(63),
-        ];
-
-        let level_index = std::cmp::min(self.level() - 1, MOVE_PERIOD_PER_LEVEL.len() - 1);
-        MOVE_PERIOD_PER_LEVEL[level_index]
+        // TODO: should this difficulty ramp be hand-tuned?
+        let clamped_level_index = std::cmp::min(self.level() - 1, 10) as u64;
+        std::time::Duration::from_millis(250 - (15 * clamped_level_index))
     }
 
     fn consume_next_tick(&mut self) -> bool {

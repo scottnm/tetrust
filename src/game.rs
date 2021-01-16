@@ -29,6 +29,7 @@ where
     active_block_pos: Vec2,
     game_phase: GamePhase,
     score: usize,
+    line_score: usize,
 }
 
 impl<TBlockTypeRand> GameState<TBlockTypeRand>
@@ -52,6 +53,7 @@ where
             active_block_pos: Vec2::zero(),
             game_phase: GamePhase::StartNextBlock,
             score: 0,
+            line_score: 0,
         }
     }
 
@@ -61,7 +63,7 @@ where
         active_block: Block,
         active_block_pos: Vec2,
         score: usize,
-        _line_score: usize, // TODO: use
+        line_score: usize,
         block_type_rng: TBlockTypeRand,
     ) -> Self {
         assert!(!board.is_empty());
@@ -88,6 +90,7 @@ where
             active_block_pos,
             game_phase: GamePhase::MoveBlock,
             score,
+            line_score,
         }
     }
 
@@ -134,6 +137,8 @@ where
 
                         let num_rows_cleared = self.clear_rows(self.active_block_pos.y);
                         self.score += Self::calculate_clear_score(num_rows_cleared);
+                        self.line_score += num_rows_cleared;
+
                         self.game_phase = GamePhase::StartNextBlock
                     }
                 } else {
@@ -205,7 +210,8 @@ where
     }
 
     pub fn level(&self) -> usize {
-        1 // TODO
+        // each level is cleared by clearing 5 lines
+        (self.line_score / 5) + 1
     }
 
     pub fn for_each_settled_piece<F>(&self, mut op: F)

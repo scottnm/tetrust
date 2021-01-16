@@ -545,7 +545,7 @@ mod tests {
 
         let start_score = 2400 + 40; // 9 lines = 2 tetrises + a single line clear
         let mut game_state =
-            test_board_from_seed(&board, active_block, active_block_pos, start_score, 4);
+            test_board_from_seed(&board, active_block, active_block_pos, start_score, 9);
 
         let start_level = 2;
         assert_eq!(game_state.score(), start_score);

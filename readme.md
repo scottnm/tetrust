@@ -73,7 +73,7 @@
 
 ![Image of pause screen](demo/11-pause.gif)
 
-- [X] [Scoring and line clears](https://github.com/scottnm/tetrust/commit/FILL-ME-IN)
+- [X] [Scoring and line clears](https://github.com/scottnm/tetrust/commit/b330acb)
 
 ![Image of scoring](demo/12-scoring.gif)
 

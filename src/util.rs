@@ -1,8 +1,20 @@
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Vec2 {
+    pub x: i32,
+    pub y: i32,
+}
+
 pub struct Rect {
     pub left: i32,
     pub top: i32,
     pub width: i32,
     pub height: i32,
+}
+
+impl Vec2 {
+    pub const fn zero() -> Self {
+        Vec2 { x: 0, y: 0 }
+    }
 }
 
 impl Rect {

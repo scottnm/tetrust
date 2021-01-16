@@ -1,4 +1,5 @@
 use crate::randwrapper::*;
+use crate::util::*;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Rotation {
@@ -8,7 +9,6 @@ pub enum Rotation {
     Rot3,
 }
 
-// TODO (scottnm): separate out blocktype into blocktype and blockvisuals and blockdata (orientation+cells)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BlockType {
     I = 1, // NOTE (scottnm): if our enum starts at 0, init_pair doesn't seem to function. Needs investigation
@@ -26,17 +26,11 @@ pub struct Block {
     pub block_type: BlockType,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Cell {
-    pub x: i32,
-    pub y: i32,
-}
-
 macro_rules! cell_array {
     ( $(($x:expr,$y:expr)),* $(,)?) => {
         [
             $(
-                Cell{x: $x, y: $y},
+                Vec2{x: $x, y: $y},
             )*
         ]
     };
@@ -84,7 +78,7 @@ impl Rotation {
         }
     }
 
-    pub fn get_kick_attempts(&self, block: BlockType, dest_rot: Rotation) -> [Cell; 5] {
+    pub fn get_kick_attempts(&self, block: BlockType, dest_rot: Rotation) -> [Vec2; 5] {
         match block {
             BlockType::O => panic!("O blocks do not need to be kicked"),
             BlockType::I => match (*self, dest_rot) {
@@ -190,7 +184,7 @@ impl Block {
         self.block_type.sprite_char()
     }
 
-    pub fn cells(&self) -> [Cell; 4] {
+    pub fn cells(&self) -> [Vec2; 4] {
         let rot = self.rot;
         match self.block_type {
             // - - - -    - - 0 -    - - - -    - 0 - -
@@ -263,19 +257,16 @@ impl Block {
     }
 
     pub fn top(&self) -> i32 {
-        // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
         self.cells().iter().min_by_key(|cell| cell.y).unwrap().y
     }
 
     pub fn left(&self) -> i32 {
-        // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
         self.cells().iter().min_by_key(|cell| cell.x).unwrap().x
     }
 
     pub fn width(&self) -> i32 {
-        // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
         let left_block = self.left();
         let right_block = self.cells().iter().max_by_key(|cell| cell.x).unwrap().x;
@@ -283,7 +274,6 @@ impl Block {
     }
 
     pub fn height(&self) -> i32 {
-        // TODO (scottnm): handle different block orientations
         // NOTE (scottnm): Unwrap is safe because all blocks should have at least 1 cell
         let top_block = self.top();
         let bottom_block = self.cells().iter().max_by_key(|cell| cell.y).unwrap().y;

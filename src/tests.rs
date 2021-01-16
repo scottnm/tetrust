@@ -1,45 +1,59 @@
+// TODO: need to add tests for rotation kicks
 #[cfg(test)]
 mod tests {
     use crate::block::*;
     use crate::game::*;
     use crate::randwrapper::*;
+    use crate::util::*;
 
-    #[allow(dead_code)] // ignore dead code because this is primarily used for debugging tests
-    fn log_blocks<T>(game: &GameState<T>)
-    where
-        T: RangeRng<usize>,
-    {
-        for block_id in 0..game.block_count() {
-            let block = game.block(block_id);
-            println!("{}: {:?}", block_id, block)
+    fn default_test_board<T: RangeRng<usize>>(block_type_rng: T) -> GameState<T> {
+        const TEST_BOARD_WIDTH: i32 = 20;
+        const TEST_BOARD_HEIGHT: i32 = 30;
+        GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, block_type_rng)
+    }
+
+    fn test_board_from_seed(
+        board: &[Vec<bool>],
+        active_block: Block,
+        active_block_pos: Vec2,
+        score: usize,
+    ) -> GameState<ThreadRangeRng> {
+        GameState::make_from_seed(
+            board,
+            active_block,
+            active_block_pos,
+            score,
+            ThreadRangeRng::new(),
+        )
+    }
+
+    #[allow(dead_code)]
+    fn print_board<T: RangeRng<usize>>(game_state: &GameState<T>) {
+        let mut board = vec![vec!['`'; game_state.width() as usize]; game_state.height() as usize];
+
+        let fill_in_board = |block_type: BlockType, pos: Vec2| {
+            board[pos.y as usize][pos.x as usize] = block_type.sprite_char();
+        };
+
+        game_state.for_each_settled_piece(fill_in_board);
+
+        for _ in 0..game_state.width() {
+            print!("-");
         }
-    }
+        print!("\n");
 
-    fn has_block_landed_oob<T>(game: &GameState<T>, block_id: usize) -> bool
-    where
-        T: RangeRng<usize>,
-    {
-        let block_pos = game.block(block_id).0;
-        game.has_block_landed(block_id) && block_pos.y < 0
-    }
-
-    fn has_any_block_landed_oob<T>(game: &GameState<T>) -> bool
-    where
-        T: RangeRng<usize>,
-    {
-        // NOTE (scottnm): iterate in reverse order because currently the rules require the last block to be the one
-        // that exceeded the board.
-        for block_id in (0..game.block_count()).rev() {
-            if has_block_landed_oob(game, block_id) {
-                return true;
+        for row in &board {
+            for cell in row {
+                print!("{}", cell);
             }
+            print!("\n");
         }
 
-        false
+        for _ in 0..game_state.width() {
+            print!("-");
+        }
+        print!("\n");
     }
-
-    const TEST_BOARD_WIDTH: i32 = 20;
-    const TEST_BOARD_HEIGHT: i32 = 30;
 
     fn gen_wrapper<T: PartialOrd>(rng: &mut dyn RangeRng<T>, lower: T, upper: T) -> T {
         rng.gen_range(lower, upper)
@@ -69,36 +83,48 @@ mod tests {
         // This test gets the tetris board to a game over state and verifies that further game
         // ticks will not change the game state.
 
-        let mut game_state =
-            GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, ThreadRangeRng::new());
+        let mut game_state = default_test_board(ThreadRangeRng::new());
         while !game_state.is_game_over() {
             game_state.tick();
         }
 
-        let block_count = game_state.block_count();
+        let expected_final_settled_piece_count = game_state.get_settled_piece_count();
         for _ in 0..5 {
             game_state.tick();
         }
-        assert_eq!(game_state.block_count(), block_count);
+        assert_eq!(
+            game_state.get_settled_piece_count(),
+            expected_final_settled_piece_count
+        );
         assert!(game_state.is_game_over());
     }
 
     #[test]
-    fn test_game_over_on_board_exceeded() {
-        // This test verifies that a game over only happens a block exceeds the board
-
-        let mut game_state =
-            GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, ThreadRangeRng::new());
-        while !game_state.is_game_over() {
-            game_state.tick();
-        }
-        assert!(has_any_block_landed_oob(&game_state));
-    }
-
-    #[test]
     fn test_expected_game_over() {
-        // This test generates only 'I' pieces on the far-left column of the board and verifies the
-        // number of pieces it takes to fill up the board
+        const EXPECTED_FINAL_BOARD: [[bool; 4]; 16] = [
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+            [false, true, true, false],
+        ];
+
+        const TEST_BOARD_WIDTH: i32 = EXPECTED_FINAL_BOARD[0].len() as i32;
+        const TEST_BOARD_HEIGHT: i32 = EXPECTED_FINAL_BOARD.len() as i32;
+
+        // This test generates only 'O' pieces perfectly stacking on each on the board and
+        // verifies the end state
         let mut game_state = GameState::new(
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
@@ -109,99 +135,130 @@ mod tests {
             game_state.tick();
         }
 
+        /*
         // each 'O' piece will start horizontal and they all will perfectly stack
         const FINAL_BLOCK_COUNT: usize = (TEST_BOARD_HEIGHT as usize / 2) + 1;
         const FINAL_BLOCK_ID: usize = FINAL_BLOCK_COUNT - 1;
         assert_eq!(game_state.block_count(), FINAL_BLOCK_COUNT);
         assert!(has_block_landed_oob(&game_state, FINAL_BLOCK_ID));
+        */
+
+        // Verify all settled pieces are inbounds
+        let expected_final_settled_piece_count: usize = EXPECTED_FINAL_BOARD
+            .iter()
+            .map(|row| row.iter().filter(|col| **col).count())
+            .sum();
+        assert_eq!(
+            game_state.get_settled_piece_count(),
+            expected_final_settled_piece_count
+        );
+
+        let mut out_of_bounds_settled_pieces = vec![];
+        let collect_out_of_bounds_settled_pieces = |block_type: BlockType, pos: Vec2| {
+            if pos.x < 0 || pos.x >= TEST_BOARD_WIDTH || pos.y < 0 || pos.y >= TEST_BOARD_HEIGHT {
+                out_of_bounds_settled_pieces.push((block_type, pos));
+            }
+        };
+
+        game_state.for_each_settled_piece(collect_out_of_bounds_settled_pieces);
+        assert_eq!(out_of_bounds_settled_pieces, vec![]);
+
+        let mut final_board: [[bool; 4]; 16] = [[false, false, false, false]; 16];
+        let collect_final_board = |_, pos: Vec2| {
+            final_board[pos.y as usize][pos.x as usize] = true;
+        };
+        game_state.for_each_settled_piece(collect_final_board);
+        assert_eq!(final_board, EXPECTED_FINAL_BOARD);
+
+        // Verify the out of bound active piece
+        let maybe_active_block = game_state.active_block();
+        assert!(maybe_active_block.is_some());
+
+        let (_, active_block_pos) = maybe_active_block.unwrap();
+        assert_eq!(active_block_pos, Vec2 { x: 0, y: -2 });
     }
 
-    fn last_block_data<T>(game_state: &GameState<T>) -> (Cell, Block)
+    fn active_block_distance_to_left_wall<T>(game_state: &GameState<T>) -> i32
     where
         T: RangeRng<usize>,
     {
-        game_state.block(game_state.block_count() - 1)
+        let block = game_state.active_block().unwrap();
+        let active_block_pos = block.1;
+        active_block_pos.x + block.0.left()
     }
 
-    fn last_block_distance_to_left_wall<T>(game_state: &GameState<T>) -> i32
+    fn active_block_distance_to_right_wall<T>(game_state: &GameState<T>) -> i32
     where
         T: RangeRng<usize>,
     {
-        let block = last_block_data(game_state);
-        let last_block_pos = block.0;
-        last_block_pos.x + block.1.left()
-    }
+        let block = game_state.active_block().unwrap();
+        let active_block_width = block.0.width();
+        let active_block_pos = block.1;
+        let active_block_rightmost_cell =
+            active_block_pos.x + block.0.left() + active_block_width - 1;
 
-    fn last_block_distance_to_right_wall<T>(game_state: &GameState<T>) -> i32
-    where
-        T: RangeRng<usize>,
-    {
-        let block = last_block_data(game_state);
-        let last_block_width = block.1.width();
-        let last_block_pos = block.0;
-        let last_block_rightmost_cell = last_block_pos.x + block.1.left() + last_block_width - 1;
-
-        (TEST_BOARD_WIDTH - 1) - last_block_rightmost_cell
+        (game_state.width() - 1) - active_block_rightmost_cell
     }
 
     fn fall_block<T>(game_state: &mut GameState<T>)
     where
         T: RangeRng<usize>,
     {
-        let original_block_count = game_state.block_count();
-        while original_block_count == game_state.block_count() && !game_state.is_game_over() {
+        let original_settled_piece_count = game_state.get_settled_piece_count();
+        while original_settled_piece_count == game_state.get_settled_piece_count()
+            && !game_state.is_game_over()
+        {
             game_state.tick();
         }
     }
 
     #[test]
     fn test_lr_collisions() {
-        let mut game_state = GameState::new(
-            TEST_BOARD_WIDTH,
-            TEST_BOARD_HEIGHT,
-            mocks::SingleValueRangeRng::new(BlockType::S as usize),
-        );
+        let mut game_state =
+            default_test_board(mocks::SingleValueRangeRng::new(BlockType::S as usize));
 
         // generate first block
+        assert!(game_state.active_block().is_none());
         game_state.tick();
-        assert!(game_state.block_count() == 1);
+        assert!(game_state.active_block().is_some());
 
         // verify that a block can be moved left which will change its position
-        let distance_to_left_wall = last_block_distance_to_left_wall(&game_state);
+        let distance_to_left_wall = active_block_distance_to_left_wall(&game_state);
         for _ in 0..distance_to_left_wall {
             game_state.move_block_horizontal(-1);
             assert_ne!(
                 distance_to_left_wall,
-                last_block_distance_to_left_wall(&game_state)
+                active_block_distance_to_left_wall(&game_state)
             );
         }
 
         // verify that once a block collides with the left wall it can't move left any further but
         // it can move right
-        assert_eq!(last_block_distance_to_left_wall(&game_state), 0);
+        assert_eq!(active_block_distance_to_left_wall(&game_state), 0);
         game_state.move_block_horizontal(-1);
-        assert_eq!(last_block_distance_to_left_wall(&game_state), 0);
+        assert_eq!(active_block_distance_to_left_wall(&game_state), 0);
         game_state.move_block_horizontal(1);
-        assert_eq!(last_block_distance_to_left_wall(&game_state), 1);
+        assert_eq!(active_block_distance_to_left_wall(&game_state), 1);
         fall_block(&mut game_state);
 
         // verify that a block can be moved right which will change its position
-        assert!(game_state.block_count() == 2);
-        let distance_to_right_wall = last_block_distance_to_right_wall(&game_state);
+        assert_eq!(game_state.get_settled_piece_count(), 4); // verify that the first piece has settled
+        game_state.tick(); // generate the next block
+        let distance_to_right_wall = active_block_distance_to_right_wall(&game_state);
         for _ in 0..distance_to_right_wall {
             game_state.move_block_horizontal(1);
             assert_ne!(
                 distance_to_right_wall,
-                last_block_distance_to_right_wall(&game_state)
+                active_block_distance_to_right_wall(&game_state)
             );
         }
         // verify that once a block collides with the right wall it can't move right any further
         // but it can move left
-        assert_eq!(last_block_distance_to_right_wall(&game_state), 0);
+        assert_eq!(active_block_distance_to_right_wall(&game_state), 0);
         game_state.move_block_horizontal(1);
-        assert_eq!(last_block_distance_to_right_wall(&game_state), 0);
+        assert_eq!(active_block_distance_to_right_wall(&game_state), 0);
         game_state.move_block_horizontal(-1);
-        assert_eq!(last_block_distance_to_right_wall(&game_state), 1);
+        assert_eq!(active_block_distance_to_right_wall(&game_state), 1);
         fall_block(&mut game_state);
 
         // generate a stack of blocks in the middle
@@ -223,8 +280,9 @@ mod tests {
         //     oo
         //      xx
         //     xx
-        let (_, last_block) = last_block_data(&game_state);
-        for _ in 0..last_block.width() {
+        game_state.tick(); // make sure the next active block is generated
+        let (active_block, _) = game_state.active_block().unwrap();
+        for _ in 0..active_block.width() {
             game_state.move_block_horizontal(1);
         }
         // drop the latest block until its 1 block away from touching the bottom
@@ -234,21 +292,21 @@ mod tests {
         //     oo  $$
         //      xx$$
         //     xx
-        for _ in 0..TEST_BOARD_HEIGHT - 1 {
+        for _ in 0..(game_state.height() - 1) {
             game_state.tick();
         }
 
-        let (last_block_pos, last_block) = last_block_data(&game_state);
+        let (active_block, active_block_pos) = game_state.active_block().unwrap();
         assert_eq!(
-            last_block_pos.y,
-            TEST_BOARD_HEIGHT - 1 - last_block.height()
+            active_block_pos.y,
+            game_state.height() - 1 - active_block.height()
         );
 
         // can't move the last block to the left because of collision
-        let left_wall_distance_before = last_block_distance_to_left_wall(&game_state);
+        let left_wall_distance_before = active_block_distance_to_left_wall(&game_state);
         game_state.move_block_horizontal(-1);
         assert_eq!(
-            last_block_distance_to_left_wall(&game_state),
+            active_block_distance_to_left_wall(&game_state),
             left_wall_distance_before
         );
 
@@ -260,8 +318,11 @@ mod tests {
         //      xx $$
         //     xx $$
         game_state.tick();
-        let (last_block_cell, last_block) = last_block_data(&game_state);
-        assert_eq!(last_block_cell.y, TEST_BOARD_HEIGHT - last_block.height());
+        let (active_block, active_block_pos) = game_state.active_block().unwrap();
+        assert_eq!(
+            active_block_pos.y,
+            game_state.height() - active_block.height()
+        );
 
         // the last block can now move left
         //      xx
@@ -272,7 +333,7 @@ mod tests {
         //     xx$$  <=
         game_state.move_block_horizontal(-1);
         assert_eq!(
-            last_block_distance_to_left_wall(&game_state),
+            active_block_distance_to_left_wall(&game_state),
             left_wall_distance_before - 1
         );
         while !game_state.is_game_over() {
@@ -287,12 +348,11 @@ mod tests {
 
         // This test generates only 'I' pieces on the far-left column of the board and verifies the
         // number of pieces it takes to fill up the board
-        let mut game_state = GameState::new(
-            TEST_BOARD_WIDTH,
-            TEST_BOARD_HEIGHT,
-            mocks::SequenceRangeRng::new(&[preview_block as usize, active_block as usize]),
-        );
-        assert_eq!(game_state.block_count(), 0);
+        let mut game_state = default_test_board(mocks::SequenceRangeRng::new(&[
+            preview_block as usize,
+            active_block as usize,
+        ]));
+        assert!(game_state.active_block().is_none());
         assert_eq!(game_state.preview_block().block_type, preview_block);
 
         while !game_state.is_game_over() {
@@ -303,9 +363,128 @@ mod tests {
             // Verify the preview and active lbock have swapped places
             std::mem::swap(&mut preview_block, &mut active_block);
             assert_eq!(game_state.preview_block().block_type, preview_block);
-            assert_eq!(last_block_data(&game_state).1.block_type, active_block);
+            assert_eq!(
+                game_state.active_block().unwrap().0.block_type,
+                active_block
+            );
 
             fall_block(&mut game_state);
         }
+    }
+
+    #[test]
+    fn test_score_1_line() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot2,
+            block_type: BlockType::T,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 200;
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+        assert_eq!(game_state.score(), start_score);
+
+        fall_block(&mut game_state);
+        assert_eq!(game_state.score(), start_score + 40);
+    }
+
+    #[test]
+    fn test_score_2_line() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot3,
+            block_type: BlockType::L,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 200;
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+        assert_eq!(game_state.score(), start_score);
+
+        fall_block(&mut game_state);
+        assert_eq!(game_state.score(), start_score + 100);
+    }
+
+    #[test]
+    fn test_score_3_line() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot3,
+            block_type: BlockType::I,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 200;
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+        assert_eq!(game_state.score(), start_score);
+
+        fall_block(&mut game_state);
+        assert_eq!(game_state.score(), start_score + 300);
+    }
+
+    #[test]
+    fn test_score_4_line() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot3,
+            block_type: BlockType::I,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 200;
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+        assert_eq!(game_state.score(), start_score);
+
+        fall_block(&mut game_state);
+        assert_eq!(game_state.score(), start_score + 1200);
     }
 }

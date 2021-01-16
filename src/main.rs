@@ -12,9 +12,27 @@ use crate::randwrapper::*;
 use crate::util::*;
 use std::time;
 
+fn render_cell(
+    window: &pancurses::Window,
+    cell_rel_pos: Vec2,
+    rel_pos_offset_x: i32,
+    rel_pos_offset_y: i32,
+    block_type: BlockType,
+) {
+    let sprite_char = block_type.sprite_char();
+    let color_pair = pancurses::COLOR_PAIR(block_type as pancurses::chtype);
+    window.attron(color_pair);
+    window.mvaddch(
+        cell_rel_pos.y + rel_pos_offset_y,
+        cell_rel_pos.x + rel_pos_offset_x,
+        sprite_char,
+    );
+    window.attroff(color_pair);
+}
+
 fn render_block(
     window: &pancurses::Window,
-    block_rel_pos: Cell,
+    block_rel_pos: Vec2,
     rel_pos_offset_x: i32,
     rel_pos_offset_y: i32,
     block: Block,
@@ -117,7 +135,7 @@ fn main() {
         height: 3,
     };
 
-    const PREVIEW_PANE_RECT: Rect = Rect {
+    const PREVIEW_FRAME_RECT: Rect = Rect {
         left: TITLE_RECT.left,
         top: TITLE_RECT.bottom() + 4,
         width: 6,
@@ -125,10 +143,17 @@ fn main() {
     };
 
     const PREVIEW_RECT: Rect = Rect {
-        left: PREVIEW_PANE_RECT.left + 1,
-        top: PREVIEW_PANE_RECT.top + 1,
-        width: PREVIEW_PANE_RECT.width - 2,
-        height: PREVIEW_PANE_RECT.height - 2,
+        left: PREVIEW_FRAME_RECT.left + 1,
+        top: PREVIEW_FRAME_RECT.top + 1,
+        width: PREVIEW_FRAME_RECT.width - 2,
+        height: PREVIEW_FRAME_RECT.height - 2,
+    };
+
+    const SCORE_FRAME_RECT: Rect = Rect {
+        left: PREVIEW_FRAME_RECT.left,
+        top: PREVIEW_FRAME_RECT.bottom() + 4,
+        width: 14,
+        height: 3,
     };
 
     let mut game_state = GameState::new(BOARD_RECT.width, BOARD_RECT.height, ThreadRangeRng::new());
@@ -218,24 +243,43 @@ fn main() {
         draw_text_centered(
             &window,
             "Next",
-            PREVIEW_PANE_RECT.center_x(),
-            PREVIEW_PANE_RECT.top - 1,
+            PREVIEW_FRAME_RECT.center_x(),
+            PREVIEW_FRAME_RECT.top - 1,
         );
-        draw_frame(&window, &PREVIEW_PANE_RECT);
+        draw_frame(&window, &PREVIEW_FRAME_RECT);
         render_block(
             &window,
-            Cell { x: 0, y: 0 },
+            Vec2::zero(),
             PREVIEW_RECT.left,
             PREVIEW_RECT.top,
             game_state.preview_block(),
         );
 
-        // Render the board
+        // Render the score pane
+        draw_text_centered(
+            &window,
+            &format!("Score: {:05}", game_state.score()),
+            SCORE_FRAME_RECT.center_x(),
+            SCORE_FRAME_RECT.center_y(),
+        );
+        draw_frame(&window, &SCORE_FRAME_RECT);
+
+        // Render the active piece
         draw_frame(&window, &BOARD_FRAME_RECT);
-        for block_id in 0..game_state.block_count() {
-            let (position, block) = game_state.block(block_id);
-            render_block(&window, position, BOARD_RECT.left, BOARD_RECT.top, block);
+        if let Some((block, block_pos)) = game_state.active_block() {
+            render_block(&window, block_pos, BOARD_RECT.left, BOARD_RECT.top, block);
         }
+
+        // Render the settled pieces
+        game_state.for_each_settled_piece(|block_type: BlockType, cell_pos: Vec2| {
+            render_cell(
+                &window,
+                cell_pos,
+                BOARD_RECT.left,
+                BOARD_RECT.top,
+                block_type,
+            );
+        });
 
         // If the game is over, render the game over text
         if game_state.is_game_over() {

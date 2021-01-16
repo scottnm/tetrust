@@ -6,13 +6,12 @@ mod tests {
     use crate::randwrapper::*;
     use crate::util::*;
 
-    // TODO: remove template parameter from game state. it just isn't needed that often for all of this type shenanigans
-    fn tick<T: RangeRng<usize>>(game_state: &mut GameState<T>) {
+    fn tick(game_state: &mut GameState) {
         const STEADY_TICK: std::time::Duration = std::time::Duration::from_millis(250);
         game_state.update(STEADY_TICK);
     }
 
-    fn default_test_board<T: RangeRng<usize>>(block_type_rng: T) -> GameState<T> {
+    fn default_test_board(block_type_rng: Box<dyn RangeRng<usize>>) -> GameState {
         const TEST_BOARD_WIDTH: i32 = 20;
         const TEST_BOARD_HEIGHT: i32 = 30;
         GameState::new(TEST_BOARD_WIDTH, TEST_BOARD_HEIGHT, block_type_rng)
@@ -24,19 +23,19 @@ mod tests {
         active_block_pos: Vec2,
         score: usize,
         line_score: usize,
-    ) -> GameState<ThreadRangeRng> {
+    ) -> GameState {
         GameState::make_from_seed(
             board,
             active_block,
             active_block_pos,
             score,
             line_score,
-            ThreadRangeRng::new(),
+            Box::new(ThreadRangeRng::new()),
         )
     }
 
     #[allow(dead_code)]
-    fn print_board<T: RangeRng<usize>>(game_state: &GameState<T>) {
+    fn print_board<T: RangeRng<usize>>(game_state: &GameState) {
         let mut board = vec![vec!['`'; game_state.width() as usize]; game_state.height() as usize];
 
         let fill_in_board = |block_type: BlockType, pos: Vec2| {
@@ -91,7 +90,7 @@ mod tests {
         // This test gets the tetris board to a game over state and verifies that further game
         // ticks will not change the game state.
 
-        let mut game_state = default_test_board(ThreadRangeRng::new());
+        let mut game_state = default_test_board(Box::new(ThreadRangeRng::new()));
         while !game_state.is_game_over() {
             tick(&mut game_state);
         }
@@ -136,7 +135,7 @@ mod tests {
         let mut game_state = GameState::new(
             TEST_BOARD_WIDTH,
             TEST_BOARD_HEIGHT,
-            mocks::SingleValueRangeRng::new(BlockType::O as usize),
+            Box::new(mocks::SingleValueRangeRng::new(BlockType::O as usize)),
         );
 
         while !game_state.is_game_over() {
@@ -186,19 +185,13 @@ mod tests {
         assert_eq!(active_block_pos, Vec2 { x: 0, y: -2 });
     }
 
-    fn active_block_distance_to_left_wall<T>(game_state: &GameState<T>) -> i32
-    where
-        T: RangeRng<usize>,
-    {
+    fn active_block_distance_to_left_wall(game_state: &GameState) -> i32 {
         let block = game_state.active_block().unwrap();
         let active_block_pos = block.1;
         active_block_pos.x + block.0.left()
     }
 
-    fn active_block_distance_to_right_wall<T>(game_state: &GameState<T>) -> i32
-    where
-        T: RangeRng<usize>,
-    {
+    fn active_block_distance_to_right_wall(game_state: &GameState) -> i32 {
         let block = game_state.active_block().unwrap();
         let active_block_width = block.0.width();
         let active_block_pos = block.1;
@@ -208,10 +201,7 @@ mod tests {
         (game_state.width() - 1) - active_block_rightmost_cell
     }
 
-    fn fall_block<T>(game_state: &mut GameState<T>)
-    where
-        T: RangeRng<usize>,
-    {
+    fn fall_block(game_state: &mut GameState) {
         let original_settled_piece_count = game_state.get_settled_piece_count();
         while original_settled_piece_count == game_state.get_settled_piece_count()
             && !game_state.is_game_over()
@@ -222,8 +212,9 @@ mod tests {
 
     #[test]
     fn test_lr_collisions() {
-        let mut game_state =
-            default_test_board(mocks::SingleValueRangeRng::new(BlockType::S as usize));
+        let mut game_state = default_test_board(Box::new(mocks::SingleValueRangeRng::new(
+            BlockType::S as usize,
+        )));
 
         // generate first block
         assert!(game_state.active_block().is_none());
@@ -356,10 +347,10 @@ mod tests {
 
         // This test generates only 'I' pieces on the far-left column of the board and verifies the
         // number of pieces it takes to fill up the board
-        let mut game_state = default_test_board(mocks::SequenceRangeRng::new(&[
+        let mut game_state = default_test_board(Box::new(mocks::SequenceRangeRng::new(&[
             preview_block as usize,
             active_block as usize,
-        ]));
+        ])));
         assert!(game_state.active_block().is_none());
         assert_eq!(game_state.preview_block().block_type, preview_block);
 

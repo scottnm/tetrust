@@ -16,13 +16,10 @@ enum Bound {
     RightWall(i32),
 }
 
-pub struct GameState<TBlockTypeRand>
-where
-    TBlockTypeRand: RangeRng<usize>,
-{
+pub struct GameState {
     board_width: i32,
     board_height: i32,
-    block_type_rng: TBlockTypeRand,
+    block_type_rng: Box<dyn RangeRng<usize>>,
     settled_cells: Box<[Option<BlockType>]>,
     next_block: Block,
     active_block: Block,
@@ -34,16 +31,13 @@ where
     move_period: std::time::Duration,
 }
 
-impl<TBlockTypeRand> GameState<TBlockTypeRand>
-where
-    TBlockTypeRand: RangeRng<usize>,
-{
+impl GameState {
     pub fn new(
         board_width: i32,
         board_height: i32,
-        mut block_type_rng: TBlockTypeRand,
-    ) -> GameState<TBlockTypeRand> {
-        let initial_block = Block::random(&mut block_type_rng);
+        mut block_type_rng: Box<dyn RangeRng<usize>>,
+    ) -> GameState {
+        let initial_block = Block::random(block_type_rng.as_mut());
         let max_blocks = (board_width * board_height) as usize;
         GameState {
             board_width,
@@ -68,7 +62,7 @@ where
         active_block_pos: Vec2,
         score: usize,
         line_score: usize,
-        block_type_rng: TBlockTypeRand,
+        block_type_rng: Box<dyn RangeRng<usize>>,
     ) -> Self {
         assert!(!board.is_empty());
         let width = board[0].len();
@@ -116,7 +110,7 @@ where
             match self.game_phase {
                 // Add a new block to the top of the board
                 GamePhase::StartNextBlock => {
-                    let new_next_block = Block::random(&mut self.block_type_rng);
+                    let new_next_block = Block::random(self.block_type_rng.as_mut());
                     let new_active_block = std::mem::replace(&mut self.next_block, new_next_block);
 
                     let start_col =

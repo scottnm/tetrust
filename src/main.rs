@@ -155,7 +155,11 @@ fn main() {
         height: 4,
     };
 
-    let mut game_state = GameState::new(BOARD_RECT.width, BOARD_RECT.height, ThreadRangeRng::new());
+    let mut game_state = GameState::new(
+        BOARD_RECT.width,
+        BOARD_RECT.height,
+        Box::new(ThreadRangeRng::new()),
+    );
 
     struct Inputs {
         move_left: bool,

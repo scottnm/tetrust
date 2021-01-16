@@ -137,7 +137,7 @@ fn main() {
 
     const PREVIEW_FRAME_RECT: Rect = Rect {
         left: TITLE_RECT.left,
-        top: TITLE_RECT.bottom() + 4,
+        top: TITLE_RECT.bottom() + 2,
         width: 6,
         height: 6,
     };
@@ -151,9 +151,9 @@ fn main() {
 
     const SCORE_FRAME_RECT: Rect = Rect {
         left: PREVIEW_FRAME_RECT.left,
-        top: PREVIEW_FRAME_RECT.bottom() + 4,
+        top: PREVIEW_FRAME_RECT.bottom() + 2,
         width: 14,
-        height: 3,
+        height: 4,
     };
 
     let mut game_state = GameState::new(BOARD_RECT.width, BOARD_RECT.height, ThreadRangeRng::new());
@@ -256,6 +256,12 @@ fn main() {
         );
 
         // Render the score pane
+        draw_text_centered(
+            &window,
+            &format!("Level: {:05}", game_state.level()),
+            SCORE_FRAME_RECT.center_x(),
+            SCORE_FRAME_RECT.center_y() - 1,
+        );
         draw_text_centered(
             &window,
             &format!("Score: {:05}", game_state.score()),

@@ -28,7 +28,6 @@ pub struct GameState {
     score: usize,
     line_score: usize,
     delta_time: std::time::Duration,
-    move_period: std::time::Duration,
 }
 
 impl GameState {
@@ -51,7 +50,6 @@ impl GameState {
             score: 0,
             line_score: 0,
             delta_time: std::time::Duration::from_millis(0), // TODO:
-            move_period: std::time::Duration::from_millis(250), // TODO:
         }
     }
 
@@ -90,7 +88,6 @@ impl GameState {
             score,
             line_score,
             delta_time: std::time::Duration::from_millis(0), // TODO:
-            move_period: std::time::Duration::from_millis(250), // TODO:
         }
     }
 
@@ -239,9 +236,22 @@ impl GameState {
         self.delta_time += delta_time
     }
 
+    fn get_move_period(&self) -> std::time::Duration {
+        // TODO: increase max level
+        const MOVE_PERIOD_PER_LEVEL: [std::time::Duration; 3] = [
+            std::time::Duration::from_millis(250),
+            std::time::Duration::from_millis(125),
+            std::time::Duration::from_millis(63),
+        ];
+
+        let level_index = std::cmp::min(self.level() - 1, MOVE_PERIOD_PER_LEVEL.len() - 1);
+        MOVE_PERIOD_PER_LEVEL[level_index]
+    }
+
     fn consume_next_tick(&mut self) -> bool {
-        if self.delta_time >= self.move_period {
-            self.delta_time -= self.move_period;
+        let move_period = self.get_move_period();
+        if self.delta_time >= move_period {
+            self.delta_time -= move_period;
             return true;
         }
 

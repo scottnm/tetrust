@@ -202,7 +202,6 @@ fn main() {
             }
         };
 
-        // TODO: make this factor in the frame speed modifier
         if last_input_handled.elapsed() >= INPUT_POLL_PERIOD {
             last_input_handled = time::Instant::now();
             let mut horizontal_motion: i32 = 0;

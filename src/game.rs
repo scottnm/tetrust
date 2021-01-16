@@ -61,6 +61,7 @@ where
         active_block: Block,
         active_block_pos: Vec2,
         score: usize,
+        _line_score: usize, // TODO: use
         block_type_rng: TBlockTypeRand,
     ) -> Self {
         assert!(!board.is_empty());
@@ -201,6 +202,10 @@ where
 
     pub fn score(&self) -> usize {
         self.score
+    }
+
+    pub fn level(&self) -> usize {
+        1 // TODO
     }
 
     pub fn for_each_settled_piece<F>(&self, mut op: F)

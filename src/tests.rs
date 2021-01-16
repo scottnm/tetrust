@@ -17,12 +17,14 @@ mod tests {
         active_block: Block,
         active_block_pos: Vec2,
         score: usize,
+        line_score: usize,
     ) -> GameState<ThreadRangeRng> {
         GameState::make_from_seed(
             board,
             active_block,
             active_block_pos,
             score,
+            line_score,
             ThreadRangeRng::new(),
         )
     }
@@ -392,9 +394,9 @@ mod tests {
         };
         let active_block_pos = Vec2::zero();
 
-        let start_score = 200;
+        let start_score = 120;
         let mut game_state =
-            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+            test_board_from_seed(&board, active_block, active_block_pos, start_score, 3);
         assert_eq!(game_state.score(), start_score);
 
         fall_block(&mut game_state);
@@ -421,9 +423,9 @@ mod tests {
         };
         let active_block_pos = Vec2::zero();
 
-        let start_score = 200;
+        let start_score = 120;
         let mut game_state =
-            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+            test_board_from_seed(&board, active_block, active_block_pos, start_score, 3);
         assert_eq!(game_state.score(), start_score);
 
         fall_block(&mut game_state);
@@ -450,9 +452,9 @@ mod tests {
         };
         let active_block_pos = Vec2::zero();
 
-        let start_score = 200;
+        let start_score = 120;
         let mut game_state =
-            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+            test_board_from_seed(&board, active_block, active_block_pos, start_score, 3);
         assert_eq!(game_state.score(), start_score);
 
         fall_block(&mut game_state);
@@ -479,12 +481,78 @@ mod tests {
         };
         let active_block_pos = Vec2::zero();
 
-        let start_score = 200;
+        let start_score = 120;
         let mut game_state =
-            test_board_from_seed(&board, active_block, active_block_pos, start_score);
+            test_board_from_seed(&board, active_block, active_block_pos, start_score, 3);
         assert_eq!(game_state.score(), start_score);
 
         fall_block(&mut game_state);
         assert_eq!(game_state.score(), start_score + 1200);
+    }
+
+    #[test]
+    fn test_level_calculation_1() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot3,
+            block_type: BlockType::I,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 160;
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score, 4);
+
+        let start_level = 1;
+        assert_eq!(game_state.score(), start_score);
+        assert_eq!(game_state.level(), start_level);
+
+        fall_block(&mut game_state);
+        assert!(game_state.score() > start_score);
+        assert_eq!(game_state.level(), start_level + 1);
+    }
+
+    #[test]
+    fn test_level_calculation_2() {
+        let board = [
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![false, false, false, false, false, false],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+            vec![true, false, true, true, true, true],
+        ];
+
+        let active_block = Block {
+            rot: Rotation::Rot3,
+            block_type: BlockType::I,
+        };
+        let active_block_pos = Vec2::zero();
+
+        let start_score = 2400 + 40; // 9 lines = 2 tetrises + a single line clear
+        let mut game_state =
+            test_board_from_seed(&board, active_block, active_block_pos, start_score, 4);
+
+        let start_level = 2;
+        assert_eq!(game_state.score(), start_score);
+        assert_eq!(game_state.level(), start_level);
+
+        fall_block(&mut game_state);
+        assert!(game_state.score() > start_score);
+        assert_eq!(game_state.level(), start_level + 1);
     }
 }

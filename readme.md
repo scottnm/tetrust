@@ -77,8 +77,12 @@
 
 ![Image of scoring](demo/12-scoring.gif)
 
-- [ ] Speed up pieces falling as more lines are cleared
+- [X] [Speed up pieces falling as more lines are cleared](https://github.com/scottnm/tetrust/commit/FILLMEIN)
+
+![Image of increased fall speed](demo/13-fallspeed.gif)
+
 - [ ] Handle quick fall
+- [ ] Show piece fall preview
 - [ ] Add start screen
 - [ ] Add high score logging
 - [ ] Add high score screen from start

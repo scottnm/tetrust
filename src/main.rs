@@ -100,8 +100,7 @@ fn main() {
     let window = pancurses::initscr();
 
     const INPUT_POLL_PERIOD: time::Duration = time::Duration::from_millis(125);
-    const DEFAULT_GAME_TICK_PERIOD: time::Duration = time::Duration::from_millis(250);
-    let mut game_tick_period = DEFAULT_GAME_TICK_PERIOD;
+    let mut frame_speed_modifier = 1.0f32;
 
     const TITLE: &str = "TETRUST";
     pancurses::noecho();
@@ -111,7 +110,7 @@ fn main() {
     window.nodelay(true);
     setup_colors();
 
-    let mut last_game_tick = time::Instant::now();
+    let mut last_frame_time = time::Instant::now();
     let mut last_input_handled = time::Instant::now();
 
     const BOARD_RECT: Rect = Rect {
@@ -137,7 +136,7 @@ fn main() {
 
     const PREVIEW_FRAME_RECT: Rect = Rect {
         left: TITLE_RECT.left,
-        top: TITLE_RECT.bottom() + 4,
+        top: TITLE_RECT.bottom() + 2,
         width: 6,
         height: 6,
     };
@@ -151,12 +150,16 @@ fn main() {
 
     const SCORE_FRAME_RECT: Rect = Rect {
         left: PREVIEW_FRAME_RECT.left,
-        top: PREVIEW_FRAME_RECT.bottom() + 4,
+        top: PREVIEW_FRAME_RECT.bottom() + 2,
         width: 14,
-        height: 3,
+        height: 4,
     };
 
-    let mut game_state = GameState::new(BOARD_RECT.width, BOARD_RECT.height, ThreadRangeRng::new());
+    let mut game_state = GameState::new(
+        BOARD_RECT.width,
+        BOARD_RECT.height,
+        Box::new(ThreadRangeRng::new()),
+    );
 
     struct Inputs {
         move_left: bool,
@@ -176,6 +179,9 @@ fn main() {
     let mut game_paused = false;
 
     loop {
+        let delta_time = last_frame_time.elapsed().mul_f32(frame_speed_modifier);
+        last_frame_time = time::Instant::now();
+
         // Input handling
         let next_key = window.getch();
         if let Some(pancurses::Input::Character(ch)) = next_key {
@@ -187,11 +193,11 @@ fn main() {
                 'l' => inputs.rot_right = true,
 
                 // debug
-                'q' => break,                                       // kill game early
-                'p' => game_paused = !game_paused,                  // toggle the pause state
-                'z' => game_tick_period *= 2,                       // slowdown tick rate
-                'x' => game_tick_period = DEFAULT_GAME_TICK_PERIOD, // reset tick rate
-                'c' => game_tick_period /= 2,                       // speed up tick rate
+                'q' => break,                          // kill game early
+                'p' => game_paused = !game_paused,     // toggle the pause state
+                'z' => frame_speed_modifier /= 2.0f32, // slowdown tick rate
+                'x' => frame_speed_modifier = 1.0f32,  // reset tick rate
+                'c' => frame_speed_modifier *= 2.0f32, // speed up tick rate
                 _ => (),
             }
         };
@@ -225,11 +231,8 @@ fn main() {
         }
 
         // Tick the game state
-        if last_game_tick.elapsed() >= game_tick_period {
-            last_game_tick = time::Instant::now();
-            if !game_paused {
-                game_state.tick();
-            }
+        if !game_paused {
+            game_state.update(delta_time);
         }
 
         // Render the next frame
@@ -256,6 +259,12 @@ fn main() {
         );
 
         // Render the score pane
+        draw_text_centered(
+            &window,
+            &format!("Level: {:05}", game_state.level()),
+            SCORE_FRAME_RECT.center_x(),
+            SCORE_FRAME_RECT.center_y() - 1,
+        );
         draw_text_centered(
             &window,
             &format!("Score: {:05}", game_state.score()),

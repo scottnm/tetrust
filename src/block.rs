@@ -173,7 +173,7 @@ impl Block {
         }
     }
 
-    pub fn random<T: RangeRng<usize>>(rng: &mut T) -> Self {
+    pub fn random(rng: &mut dyn RangeRng<usize>) -> Self {
         Block {
             rot: Rotation::Rot0,
             block_type: BLOCKTYPES[rng.gen_range(1, BLOCKTYPES.len() + 1) - 1],

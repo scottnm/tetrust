@@ -16,31 +16,27 @@ enum Bound {
     RightWall(i32),
 }
 
-pub struct GameState<TBlockTypeRand>
-where
-    TBlockTypeRand: RangeRng<usize>,
-{
+pub struct GameState {
     board_width: i32,
     board_height: i32,
-    block_type_rng: TBlockTypeRand,
+    block_type_rng: Box<dyn RangeRng<usize>>,
     settled_cells: Box<[Option<BlockType>]>,
     next_block: Block,
     active_block: Block,
     active_block_pos: Vec2,
     game_phase: GamePhase,
     score: usize,
+    line_score: usize,
+    delta_time: std::time::Duration,
 }
 
-impl<TBlockTypeRand> GameState<TBlockTypeRand>
-where
-    TBlockTypeRand: RangeRng<usize>,
-{
+impl GameState {
     pub fn new(
         board_width: i32,
         board_height: i32,
-        mut block_type_rng: TBlockTypeRand,
-    ) -> GameState<TBlockTypeRand> {
-        let initial_block = Block::random(&mut block_type_rng);
+        mut block_type_rng: Box<dyn RangeRng<usize>>,
+    ) -> GameState {
+        let initial_block = Block::random(block_type_rng.as_mut());
         let max_blocks = (board_width * board_height) as usize;
         GameState {
             board_width,
@@ -52,6 +48,8 @@ where
             active_block_pos: Vec2::zero(),
             game_phase: GamePhase::StartNextBlock,
             score: 0,
+            line_score: 0,
+            delta_time: std::time::Duration::from_millis(0), // TODO:
         }
     }
 
@@ -61,7 +59,8 @@ where
         active_block: Block,
         active_block_pos: Vec2,
         score: usize,
-        block_type_rng: TBlockTypeRand,
+        line_score: usize,
+        block_type_rng: Box<dyn RangeRng<usize>>,
     ) -> Self {
         assert!(!board.is_empty());
         let width = board[0].len();
@@ -87,6 +86,8 @@ where
             active_block_pos,
             game_phase: GamePhase::MoveBlock,
             score,
+            line_score,
+            delta_time: std::time::Duration::from_millis(0), // TODO:
         }
     }
 
@@ -100,48 +101,53 @@ where
         self.board_height
     }
 
-    pub fn tick(&mut self) {
-        match self.game_phase {
-            // Add a new block to the top of the board
-            GamePhase::StartNextBlock => {
-                let new_next_block = Block::random(&mut self.block_type_rng);
-                let new_active_block = std::mem::replace(&mut self.next_block, new_next_block);
+    pub fn update(&mut self, delta_time: std::time::Duration) {
+        self.add_time(delta_time);
+        while self.consume_next_tick() {
+            match self.game_phase {
+                // Add a new block to the top of the board
+                GamePhase::StartNextBlock => {
+                    let new_next_block = Block::random(self.block_type_rng.as_mut());
+                    let new_active_block = std::mem::replace(&mut self.next_block, new_next_block);
 
-                let start_col =
-                    (self.board_width - new_active_block.width()) / 2 - new_active_block.left();
-                let start_row = -new_active_block.height();
+                    let start_col =
+                        (self.board_width - new_active_block.width()) / 2 - new_active_block.left();
+                    let start_row = -new_active_block.height();
 
-                let new_active_block_pos = Vec2 {
-                    x: start_col,
-                    y: start_row,
-                };
+                    let new_active_block_pos = Vec2 {
+                        x: start_col,
+                        y: start_row,
+                    };
 
-                self.active_block = new_active_block;
-                self.active_block_pos = new_active_block_pos;
-                self.game_phase = GamePhase::MoveBlock;
-            }
-
-            // Move the latest block down across the board
-            GamePhase::MoveBlock => {
-                if self.has_active_block_landed() {
-                    let is_block_above_board = self.active_block_pos.y < 0;
-                    if is_block_above_board {
-                        self.game_phase = GamePhase::GameOver
-                    } else {
-                        // Bake the active block into the settled cell grid.
-                        self.settle_active_block();
-
-                        let num_rows_cleared = self.clear_rows(self.active_block_pos.y);
-                        self.score += Self::calculate_clear_score(num_rows_cleared);
-                        self.game_phase = GamePhase::StartNextBlock
-                    }
-                } else {
-                    self.active_block_pos.y += 1;
+                    self.active_block = new_active_block;
+                    self.active_block_pos = new_active_block_pos;
+                    self.game_phase = GamePhase::MoveBlock;
                 }
-            }
 
-            // The game is over; NOOP
-            GamePhase::GameOver => (),
+                // Move the latest block down across the board
+                GamePhase::MoveBlock => {
+                    if self.has_active_block_landed() {
+                        let is_block_above_board = self.active_block_pos.y < 0;
+                        if is_block_above_board {
+                            self.game_phase = GamePhase::GameOver
+                        } else {
+                            // Bake the active block into the settled cell grid.
+                            self.settle_active_block();
+
+                            let num_rows_cleared = self.clear_rows(self.active_block_pos.y);
+                            self.score += Self::calculate_clear_score(num_rows_cleared);
+                            self.line_score += num_rows_cleared;
+
+                            self.game_phase = GamePhase::StartNextBlock
+                        }
+                    } else {
+                        self.active_block_pos.y += 1;
+                    }
+                }
+
+                // The game is over; NOOP
+                GamePhase::GameOver => (),
+            }
         }
     }
 
@@ -203,6 +209,11 @@ where
         self.score
     }
 
+    pub fn level(&self) -> usize {
+        // each level is cleared by clearing 5 lines
+        (self.line_score / 5) + 1
+    }
+
     pub fn for_each_settled_piece<F>(&self, mut op: F)
     where
         F: FnMut(BlockType, Vec2),
@@ -219,6 +230,26 @@ where
     #[cfg(test)]
     pub fn get_settled_piece_count(&self) -> usize {
         self.settled_cells.iter().filter(|c| c.is_some()).count()
+    }
+
+    fn add_time(&mut self, delta_time: std::time::Duration) {
+        self.delta_time += delta_time
+    }
+
+    fn get_move_period(&self) -> std::time::Duration {
+        // TODO: should this difficulty ramp be hand-tuned?
+        let clamped_level_index = std::cmp::min(self.level() - 1, 10) as u64;
+        std::time::Duration::from_millis(250 - (15 * clamped_level_index))
+    }
+
+    fn consume_next_tick(&mut self) -> bool {
+        let move_period = self.get_move_period();
+        if self.delta_time >= move_period {
+            self.delta_time -= move_period;
+            return true;
+        }
+
+        false
     }
 
     fn cell_index(&self, x: i32, y: i32) -> usize {

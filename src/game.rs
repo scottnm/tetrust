@@ -399,6 +399,7 @@ where
             _ => panic!("There is no way to clear more than 4 lines at once!"),
         }
     }
+
     fn does_block_collide_with_settled_blocks(
         &self,
         block: Block,

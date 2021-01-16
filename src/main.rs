@@ -100,8 +100,7 @@ fn main() {
     let window = pancurses::initscr();
 
     const INPUT_POLL_PERIOD: time::Duration = time::Duration::from_millis(125);
-    const DEFAULT_GAME_TICK_PERIOD: time::Duration = time::Duration::from_millis(250);
-    let mut game_tick_period = DEFAULT_GAME_TICK_PERIOD;
+    let mut frame_speed_modifier = 1.0f32;
 
     const TITLE: &str = "TETRUST";
     pancurses::noecho();
@@ -111,7 +110,7 @@ fn main() {
     window.nodelay(true);
     setup_colors();
 
-    let mut last_game_tick = time::Instant::now();
+    let mut last_frame_time = time::Instant::now();
     let mut last_input_handled = time::Instant::now();
 
     const BOARD_RECT: Rect = Rect {
@@ -176,6 +175,9 @@ fn main() {
     let mut game_paused = false;
 
     loop {
+        let delta_time = last_frame_time.elapsed().mul_f32(frame_speed_modifier);
+        last_frame_time = time::Instant::now();
+
         // Input handling
         let next_key = window.getch();
         if let Some(pancurses::Input::Character(ch)) = next_key {
@@ -187,15 +189,16 @@ fn main() {
                 'l' => inputs.rot_right = true,
 
                 // debug
-                'q' => break,                                       // kill game early
-                'p' => game_paused = !game_paused,                  // toggle the pause state
-                'z' => game_tick_period *= 2,                       // slowdown tick rate
-                'x' => game_tick_period = DEFAULT_GAME_TICK_PERIOD, // reset tick rate
-                'c' => game_tick_period /= 2,                       // speed up tick rate
+                'q' => break,                          // kill game early
+                'p' => game_paused = !game_paused,     // toggle the pause state
+                'z' => frame_speed_modifier /= 2.0f32, // slowdown tick rate
+                'x' => frame_speed_modifier = 1.0f32,  // reset tick rate
+                'c' => frame_speed_modifier *= 2.0f32, // speed up tick rate
                 _ => (),
             }
         };
 
+        // TODO: make this factor in the frame speed modifier
         if last_input_handled.elapsed() >= INPUT_POLL_PERIOD {
             last_input_handled = time::Instant::now();
             let mut horizontal_motion: i32 = 0;
@@ -225,11 +228,8 @@ fn main() {
         }
 
         // Tick the game state
-        if last_game_tick.elapsed() >= game_tick_period {
-            last_game_tick = time::Instant::now();
-            if !game_paused {
-                game_state.tick();
-            }
+        if !game_paused {
+            game_state.update(delta_time);
         }
 
         // Render the next frame

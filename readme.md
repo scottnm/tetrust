@@ -79,6 +79,7 @@
 
 - [ ] Speed up pieces falling as more lines are cleared
 - [ ] Handle quick fall
+- [ ] Show piece fall preview
 - [ ] Add start screen
 - [ ] Add high score logging
 - [ ] Add high score screen from start

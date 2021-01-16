@@ -73,8 +73,13 @@
 
 ![Image of pause screen](demo/11-pause.gif)
 
-- [ ] Allow clearing lines
+- [X] [Scoring and line clears](https://github.com/scottnm/tetrust/commit/FILL-ME-IN)
+
+![Image of scoring](demo/12-scoring.gif)
+
 - [ ] Speed up pieces falling as more lines are cleared
-- [ ] Handle scoring
 - [ ] Handle quick fall
+- [ ] Add start screen
+- [ ] Add high score logging
+- [ ] Add high score screen from start
 

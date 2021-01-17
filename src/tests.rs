@@ -679,7 +679,7 @@ mod tests {
     #[test]
     fn test_new_leaderboard_file_missing() {
         let leaderboard_from_file = Leaderboard::load("data/does_not_exist.leaderboard");
-        assert!(leaderboard_from_file.is_none());
+        assert!(leaderboard_from_file.is_err());
     }
 
     #[test]

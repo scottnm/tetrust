@@ -32,23 +32,56 @@ impl Leaderboard {
         Leaderboard { entries: vec![] }
     }
 
-    pub fn load<S: AsRef<str>>(_file_name: S) -> Option<Self> {
-        Some(Leaderboard {
-            entries: vec![
-                LeaderboardEntry::new("TS1", 2000),
-                LeaderboardEntry::new("TS2", 1500),
-                LeaderboardEntry::new("TS3", 1000),
-                LeaderboardEntry::new("TS4", 500),
-            ],
-        })
+    pub fn load<P: AsRef<std::path::Path>>(file_name: P) -> Result<Self, &'static str> {
+        let mut lines = Vec::new();
+
+        let file = std::fs::File::open(file_name).map_err(|_| "File not found")?;
+        use std::io::BufRead;
+        for line in std::io::BufReader::new(file).lines() {
+            let checked_line = line.map_err(|_| "unreadable line in file")?;
+            lines.push(checked_line);
+        }
+
+        if lines.len() > Leaderboard::max_entries() {
+            return Err("Too many lines in file");
+        }
+
+        let mut last_score = std::usize::MAX;
+        let mut entries = Vec::new();
+        for line in lines {
+            let mut line_elements = line.split(" ");
+            let name = line_elements.next().ok_or("missing name entry in file")?;
+            let score: usize = line_elements
+                .next()
+                .ok_or("missing score entry in file")?
+                .parse()
+                .map_err(|_| "invalid score entry in file")?;
+
+            if score > last_score {
+                return Err("Leaderboard file corrupted");
+            }
+
+            last_score = score;
+            entries.push(LeaderboardEntry::new(name, score));
+        }
+
+        Ok(Leaderboard { entries })
     }
 
-    pub fn save<S: AsRef<str>>(&self, _file_name: S) {
-        // unimplemented!();
+    pub fn save<P: AsRef<std::path::Path>>(&self, file_name: P) {
+        let file = std::fs::File::create(&file_name).unwrap();
+        let mut writer = std::io::LineWriter::new(file);
+
+        use std::io::Write;
+        writer.write_all(self.serialize().as_bytes()).unwrap();
     }
 
     pub fn serialize(&self) -> String {
-        unimplemented!();
+        let mut serialized_board = String::new();
+        for entry in &self.entries {
+            serialized_board += &format!("{} {}\n", entry.name, entry.score);
+        }
+        serialized_board
     }
 
     pub fn get_place_on_leaderboard(&self, score: usize) -> Option<usize> {

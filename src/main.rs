@@ -115,8 +115,9 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
         r#"        \/___/"#,
     ];
 
+    let (window_height, window_width) = window.get_max_yx();
+
     let title_rect = {
-        let (window_height, window_width) = window.get_max_yx();
         let title_width = TITLE_LINES.iter().map(|line| line.len()).max().unwrap() as i32;
         const TITLE_HEIGHT: i32 = TITLE_LINES.len() as i32;
 
@@ -130,14 +131,45 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
         }
     };
 
+    let menu_cursor: usize = 0;
+    const MENU_OPTIONS: [&str; 2] = ["Start Game", "Quit"];
+
+    let menu_rect = {
+        let menu_width = MENU_OPTIONS
+            .iter()
+            .map(|option_text| option_text.len())
+            .max()
+            .unwrap() as i32;
+        const MENU_HEIGHT: i32 = MENU_OPTIONS.len() as i32;
+
+        Rect {
+            // center the menu options horizontally
+            left: (window_width - menu_width) / 2,
+            // place the menu options just below the horizontal divide
+            top: (window_height / 2) + 1,
+            // Add 2 characters to the menu width to account for the cursor
+            width: menu_width + 2,
+            height: MENU_HEIGHT,
+        }
+    };
+
     loop {
         // clear the screen
         window.erase();
 
         // Render the title card
         for (i, title_line) in TITLE_LINES.iter().enumerate() {
-            let row_offset = i as i32;
-            window.mvaddstr(row_offset + title_rect.top, title_rect.left, title_line);
+            let row_offset = (i as i32) + title_rect.top;
+            window.mvaddstr(row_offset, title_rect.left, title_line);
+        }
+
+        // Render the menu options
+        for (i, menu_line) in MENU_OPTIONS.iter().enumerate() {
+            let row_offset = (i as i32) + menu_rect.top;
+            if i == menu_cursor {
+                window.mvaddstr(row_offset, menu_rect.left, "> ");
+            }
+            window.mvaddstr(row_offset, menu_rect.left + 2, menu_line);
         }
 
         // Input handling

@@ -49,7 +49,7 @@ impl GameState {
             game_phase: GamePhase::StartNextBlock,
             score: 0,
             line_score: 0,
-            delta_time: std::time::Duration::from_millis(0), // TODO:
+            delta_time: std::time::Duration::from_millis(0),
         }
     }
 
@@ -87,7 +87,7 @@ impl GameState {
             game_phase: GamePhase::MoveBlock,
             score,
             line_score,
-            delta_time: std::time::Duration::from_millis(0), // TODO:
+            delta_time: std::time::Duration::from_millis(0),
         }
     }
 

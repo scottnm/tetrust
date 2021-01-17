@@ -503,9 +503,7 @@ fn run_game(window: &pancurses::Window) -> Option<Screen> {
         window.refresh();
     }
 
-    Some(Screen::LeaderboardUpdate(
-        1750, /*TODO: game_state.score()*/
-    ))
+    Some(Screen::LeaderboardUpdate(game_state.score()))
 }
 
 fn display_leaderboard(
@@ -564,7 +562,7 @@ fn display_leaderboard(
 
             draw_text_centered(
                 &window,
-                &format!("#{:02}    {}    {:05}", leaderboard_pos, name, score),
+                &format!("#{:02}    {:3}    {:05}", leaderboard_pos, name, score),
                 leaderboard_rect.center_x(),
                 leaderboard_rect.top + row_offset,
             );
@@ -597,7 +595,29 @@ fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Sc
             }
         };
 
-        let new_leaderboard_name = loop {
+        let mut next_initial = 0;
+        let mut initials = ['_'; 3];
+
+        loop {
+            const ENTER_KEY: char = 10 as char;
+            const BKSPC_KEY: char = 08 as char;
+            if let Some(pancurses::Input::Character(ch)) = window.getch() {
+                match ch {
+                    // check for movement inputs
+                    ENTER_KEY => break,
+                    BKSPC_KEY => {
+                        initials[next_initial] = '_';
+                        next_initial = std::cmp::max(1, next_initial) - 1;
+                    }
+                    letter => {
+                        if next_initial < initials.len() {
+                            initials[next_initial] = letter;
+                            next_initial += 1;
+                        }
+                    }
+                }
+            };
+
             window.erase();
             display_leaderboard(&window, &leaderboard, new_leaderboard_entry_pos);
 
@@ -608,18 +628,23 @@ fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Sc
             window.attron(pancurses::A_BLINK);
             draw_text_centered(
                 &window,
-                &format!("#{:02}    {}    {:05}", leaderboard_pos, "___", score),
+                &format!(
+                    "#{:02}    {}{}{}    {:05}",
+                    leaderboard_pos, initials[0], initials[1], initials[2], score
+                ),
                 leaderboard_rect.center_x(),
                 leaderboard_rect.top + row_offset,
             );
             window.attroff(pancurses::A_BLINK);
 
             window.refresh();
-            std::thread::sleep(std::time::Duration::from_secs(3));
-            break "TS9";
-        };
+        }
 
-        leaderboard.add_score(new_leaderboard_name, score);
+        let name = initials
+            .iter()
+            .map(|initial| if *initial == '_' { ' ' } else { *initial })
+            .collect::<String>();
+        leaderboard.add_score(name, score);
         leaderboard.save("data/leaderboard");
     }
 

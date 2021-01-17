@@ -98,10 +98,18 @@ where
     window.mvaddstr(y_center, x_center - (text.as_ref().len() / 2) as i32, text);
 }
 
-fn run_game_screen(window: &pancurses::Window) {
+enum Screen {
+    StartMenu,
+    Game,
+}
+
+fn run_start_menu(_window: &pancurses::Window) -> Option<Screen> {
+    Some(Screen::Game)
+}
+
+fn run_game(window: &pancurses::Window) -> Option<Screen> {
     const INPUT_POLL_PERIOD: time::Duration = time::Duration::from_millis(125);
     let mut frame_speed_modifier = 1.0f32;
-
 
     let mut last_frame_time = time::Instant::now();
     let mut last_input_handled = time::Instant::now();
@@ -343,6 +351,8 @@ fn run_game_screen(window: &pancurses::Window) {
 
         window.refresh();
     }
+
+    Some(Screen::StartMenu)
 }
 
 fn main() {
@@ -357,8 +367,24 @@ fn main() {
     // setup the color system
     setup_colors();
 
+    // Run the game until we quit
+    let mut screen = Screen::StartMenu;
+    loop {
+        // Run the current screen until it signals a transition
+        let next_screen = match screen {
+            Screen::StartMenu => run_start_menu(&window),
+            Screen::Game => run_game(&window),
+        };
+
+        // If the transition includes a new screen start rendering that.
+        screen = match next_screen {
+            Some(s) => s,
+            None => break,
+        }
+    }
+
     // Run the game
-    run_game_screen(&window);
+    run_game(&window);
 
     // Close the window
     pancurses::endwin();

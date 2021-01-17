@@ -14,6 +14,11 @@ use std::time;
 
 const TITLE: &str = "TETRUST";
 
+fn get_color_pair(color_index: usize, invert: bool) -> pancurses::chtype {
+    let invert_offset = if invert { BLOCKTYPES.len() } else { 0 };
+    pancurses::COLOR_PAIR((color_index + invert_offset) as pancurses::chtype)
+}
+
 fn render_cell(
     window: &pancurses::Window,
     cell_rel_pos: Vec2,
@@ -22,7 +27,7 @@ fn render_cell(
     block_type: BlockType,
 ) {
     let sprite_char = block_type.sprite_char();
-    let color_pair = pancurses::COLOR_PAIR(block_type as pancurses::chtype);
+    let color_pair = get_color_pair(block_type as usize, false);
     window.attron(color_pair);
     window.mvaddch(
         cell_rel_pos.y + rel_pos_offset_y,
@@ -40,7 +45,7 @@ fn render_block(
     block: Block,
 ) {
     let sprite_char = block.sprite_char();
-    let color_pair = pancurses::COLOR_PAIR(block.block_type as pancurses::chtype);
+    let color_pair = get_color_pair(block.block_type as usize, false);
     window.attron(color_pair);
     for cell_pos in &block.cells() {
         // Ok to blit block sprite even if position is OOB
@@ -56,12 +61,21 @@ fn render_block(
 fn setup_colors() {
     pancurses::start_color();
 
-    assert!(BLOCKTYPES.len() < pancurses::COLOR_PAIRS() as usize);
+    assert!(BLOCKTYPES.len() * 2 < pancurses::COLOR_PAIRS() as usize);
+
     for block_type in BLOCKTYPES.iter() {
+        let block_color_pair_index = *block_type as i16;
+
         pancurses::init_pair(
-            *block_type as i16,
+            block_color_pair_index,
             pancurses::COLOR_BLACK,
             block_type.sprite_color(),
+        );
+
+        pancurses::init_pair(
+            block_color_pair_index + BLOCKTYPES.len() as i16,
+            block_type.sprite_color(),
+            pancurses::COLOR_BLACK,
         );
     }
 }
@@ -133,7 +147,7 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
 
     let mut menu_cursor: usize = 0;
     const MENU_OPTIONS: [&str; 2] = ["Start Game", "Quit"];
-    const MENU_OPTION_RESULTS: [Option<Screen>; 2] = [Some(Screen::Game), None];
+    const MENU_OPTION_RESULTS: [Option<Screen>; MENU_OPTIONS.len()] = [Some(Screen::Game), None];
 
     let menu_rect = {
         let menu_width = MENU_OPTIONS
@@ -161,7 +175,10 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
         // Render the title card
         for (i, title_line) in TITLE_LINES.iter().enumerate() {
             let row_offset = (i as i32) + title_rect.top;
+            let color_pair = get_color_pair(i + 1, true);
+            window.attron(color_pair);
             window.mvaddstr(row_offset, title_rect.left, title_line);
+            window.attroff(color_pair);
         }
 
         // Render the menu options

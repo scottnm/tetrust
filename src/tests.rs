@@ -201,13 +201,9 @@ mod tests {
         (game_state.width() - 1) - active_block_rightmost_cell
     }
 
-    fn fall_block(game_state: &mut GameState) {
-        let original_settled_piece_count = game_state.get_settled_piece_count();
-        while original_settled_piece_count == game_state.get_settled_piece_count()
-            && !game_state.is_game_over()
-        {
-            tick(game_state);
-        }
+    fn drop_active_block(game_state: &mut GameState) {
+        game_state.quick_drop();
+        tick(game_state);
     }
 
     #[test]
@@ -238,7 +234,7 @@ mod tests {
         assert_eq!(active_block_distance_to_left_wall(&game_state), 0);
         game_state.move_active_block_horizontal(1);
         assert_eq!(active_block_distance_to_left_wall(&game_state), 1);
-        fall_block(&mut game_state);
+        drop_active_block(&mut game_state);
 
         // verify that a block can be moved right which will change its position
         assert_eq!(game_state.get_settled_piece_count(), 4); // verify that the first piece has settled
@@ -258,7 +254,7 @@ mod tests {
         assert_eq!(active_block_distance_to_right_wall(&game_state), 0);
         game_state.move_active_block_horizontal(-1);
         assert_eq!(active_block_distance_to_right_wall(&game_state), 1);
-        fall_block(&mut game_state);
+        drop_active_block(&mut game_state);
 
         // generate a stack of blocks in the middle
         //      xx
@@ -268,8 +264,9 @@ mod tests {
         //      xx
         //     xx
         for _ in 0..3 {
-            fall_block(&mut game_state);
+            drop_active_block(&mut game_state);
         }
+
         // move latest block off to the right
         //     =>  $$
         //     => $$
@@ -279,11 +276,11 @@ mod tests {
         //     oo
         //      xx
         //     xx
-        tick(&mut game_state); // make sure the next active block is generated
         let (active_block, _) = game_state.active_block().unwrap();
         for _ in 0..active_block.width() {
             game_state.move_active_block_horizontal(1);
         }
+
         // drop the latest block until its 1 block away from touching the bottom
         //      xx  |
         //     xx   V
@@ -335,6 +332,8 @@ mod tests {
             active_block_distance_to_left_wall(&game_state),
             left_wall_distance_before - 1
         );
+
+        // verify the game can be finished
         while !game_state.is_game_over() {
             tick(&mut game_state);
         }
@@ -367,7 +366,7 @@ mod tests {
                 active_block
             );
 
-            fall_block(&mut game_state);
+            drop_active_block(&mut game_state);
         }
     }
 
@@ -396,7 +395,7 @@ mod tests {
             test_board_from_seed(&board, active_block, active_block_pos, start_score, 3);
         assert_eq!(game_state.score(), start_score);
 
-        fall_block(&mut game_state);
+        drop_active_block(&mut game_state);
         assert_eq!(game_state.score(), start_score + 40);
     }
 
@@ -425,7 +424,7 @@ mod tests {
             test_board_from_seed(&board, active_block, active_block_pos, start_score, 3);
         assert_eq!(game_state.score(), start_score);
 
-        fall_block(&mut game_state);
+        drop_active_block(&mut game_state);
         assert_eq!(game_state.score(), start_score + 100);
     }
 
@@ -454,7 +453,7 @@ mod tests {
             test_board_from_seed(&board, active_block, active_block_pos, start_score, 3);
         assert_eq!(game_state.score(), start_score);
 
-        fall_block(&mut game_state);
+        drop_active_block(&mut game_state);
         assert_eq!(game_state.score(), start_score + 300);
     }
 
@@ -483,7 +482,7 @@ mod tests {
             test_board_from_seed(&board, active_block, active_block_pos, start_score, 3);
         assert_eq!(game_state.score(), start_score);
 
-        fall_block(&mut game_state);
+        drop_active_block(&mut game_state);
         assert_eq!(game_state.score(), start_score + 1200);
     }
 
@@ -515,7 +514,7 @@ mod tests {
         assert_eq!(game_state.score(), start_score);
         assert_eq!(game_state.level(), start_level);
 
-        fall_block(&mut game_state);
+        drop_active_block(&mut game_state);
         assert!(game_state.score() > start_score);
         assert_eq!(game_state.level(), start_level + 1);
     }
@@ -548,7 +547,7 @@ mod tests {
         assert_eq!(game_state.score(), start_score);
         assert_eq!(game_state.level(), start_level);
 
-        fall_block(&mut game_state);
+        drop_active_block(&mut game_state);
         assert!(game_state.score() > start_score);
         assert_eq!(game_state.level(), start_level + 1);
     }

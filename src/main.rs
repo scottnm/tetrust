@@ -12,6 +12,8 @@ use crate::randwrapper::*;
 use crate::util::*;
 use std::time;
 
+const TITLE: &str = "TETRUST";
+
 fn render_cell(
     window: &pancurses::Window,
     cell_rel_pos: Vec2,
@@ -96,19 +98,10 @@ where
     window.mvaddstr(y_center, x_center - (text.as_ref().len() / 2) as i32, text);
 }
 
-fn main() {
-    let window = pancurses::initscr();
-
+fn run_game_screen(window: &pancurses::Window) {
     const INPUT_POLL_PERIOD: time::Duration = time::Duration::from_millis(125);
     let mut frame_speed_modifier = 1.0f32;
 
-    const TITLE: &str = "TETRUST";
-    pancurses::noecho();
-    pancurses::cbreak();
-    pancurses::curs_set(0);
-    pancurses::set_title(TITLE);
-    window.nodelay(true);
-    setup_colors();
 
     let mut last_frame_time = time::Instant::now();
     let mut last_input_handled = time::Instant::now();
@@ -350,9 +343,23 @@ fn main() {
 
         window.refresh();
     }
+}
 
+fn main() {
+    // setup the window
+    let window = pancurses::initscr();
+    pancurses::noecho();
+    pancurses::cbreak();
+    pancurses::curs_set(0);
+    pancurses::set_title(TITLE);
+    window.nodelay(true);
+
+    // setup the color system
+    setup_colors();
+
+    // Run the game
+    run_game_screen(&window);
+
+    // Close the window
     pancurses::endwin();
-
-    println!("Lose!");
-    println!("Finished");
 }

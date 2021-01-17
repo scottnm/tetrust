@@ -224,7 +224,7 @@ mod tests {
         // verify that a block can be moved left which will change its position
         let distance_to_left_wall = active_block_distance_to_left_wall(&game_state);
         for _ in 0..distance_to_left_wall {
-            game_state.move_block_horizontal(-1);
+            game_state.move_active_block_horizontal(-1);
             assert_ne!(
                 distance_to_left_wall,
                 active_block_distance_to_left_wall(&game_state)
@@ -234,9 +234,9 @@ mod tests {
         // verify that once a block collides with the left wall it can't move left any further but
         // it can move right
         assert_eq!(active_block_distance_to_left_wall(&game_state), 0);
-        game_state.move_block_horizontal(-1);
+        game_state.move_active_block_horizontal(-1);
         assert_eq!(active_block_distance_to_left_wall(&game_state), 0);
-        game_state.move_block_horizontal(1);
+        game_state.move_active_block_horizontal(1);
         assert_eq!(active_block_distance_to_left_wall(&game_state), 1);
         fall_block(&mut game_state);
 
@@ -245,7 +245,7 @@ mod tests {
         tick(&mut game_state); // generate the next block
         let distance_to_right_wall = active_block_distance_to_right_wall(&game_state);
         for _ in 0..distance_to_right_wall {
-            game_state.move_block_horizontal(1);
+            game_state.move_active_block_horizontal(1);
             assert_ne!(
                 distance_to_right_wall,
                 active_block_distance_to_right_wall(&game_state)
@@ -254,9 +254,9 @@ mod tests {
         // verify that once a block collides with the right wall it can't move right any further
         // but it can move left
         assert_eq!(active_block_distance_to_right_wall(&game_state), 0);
-        game_state.move_block_horizontal(1);
+        game_state.move_active_block_horizontal(1);
         assert_eq!(active_block_distance_to_right_wall(&game_state), 0);
-        game_state.move_block_horizontal(-1);
+        game_state.move_active_block_horizontal(-1);
         assert_eq!(active_block_distance_to_right_wall(&game_state), 1);
         fall_block(&mut game_state);
 
@@ -282,7 +282,7 @@ mod tests {
         tick(&mut game_state); // make sure the next active block is generated
         let (active_block, _) = game_state.active_block().unwrap();
         for _ in 0..active_block.width() {
-            game_state.move_block_horizontal(1);
+            game_state.move_active_block_horizontal(1);
         }
         // drop the latest block until its 1 block away from touching the bottom
         //      xx  |
@@ -303,7 +303,7 @@ mod tests {
 
         // can't move the last block to the left because of collision
         let left_wall_distance_before = active_block_distance_to_left_wall(&game_state);
-        game_state.move_block_horizontal(-1);
+        game_state.move_active_block_horizontal(-1);
         assert_eq!(
             active_block_distance_to_left_wall(&game_state),
             left_wall_distance_before
@@ -330,7 +330,7 @@ mod tests {
         //     oo
         //      xx$$ <=
         //     xx$$  <=
-        game_state.move_block_horizontal(-1);
+        game_state.move_active_block_horizontal(-1);
         assert_eq!(
             active_block_distance_to_left_wall(&game_state),
             left_wall_distance_before - 1

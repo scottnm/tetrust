@@ -141,7 +141,7 @@ impl GameState {
                             self.game_phase = GamePhase::StartNextBlock
                         }
                     } else {
-                        self.active_block_pos.y += 1;
+                        self.move_active_block_down();
                     }
                 }
 
@@ -151,7 +151,7 @@ impl GameState {
         }
     }
 
-    pub fn move_block_horizontal(&mut self, horizontal_motion: i32) {
+    pub fn move_active_block_horizontal(&mut self, horizontal_motion: i32) {
         match self.game_phase {
             GamePhase::MoveBlock => {
                 if self.can_active_block_move(horizontal_motion) {
@@ -159,6 +159,16 @@ impl GameState {
                 }
             }
             GamePhase::StartNextBlock | GamePhase::GameOver => (),
+        }
+    }
+
+    pub fn move_active_block_down(&mut self) {
+        self.active_block_pos.y += 1;
+    }
+
+    pub fn quick_drop(&mut self) {
+        while !self.has_active_block_landed() {
+            self.move_active_block_down();
         }
     }
 

@@ -166,6 +166,7 @@ fn main() {
         move_right: bool,
         rot_left: bool,
         rot_right: bool,
+        drop: bool,
     }
 
     let mut inputs = Inputs {
@@ -173,6 +174,7 @@ fn main() {
         move_right: false,
         rot_left: false,
         rot_right: false,
+        drop: false,
     };
 
     let mut game_over_blit_timer = Option::<time::Instant>::None;
@@ -189,6 +191,7 @@ fn main() {
                 // check for movement inputs
                 'a' => inputs.move_left = true,
                 'd' => inputs.move_right = true,
+                's' => inputs.drop = true,
                 'j' => inputs.rot_left = true,
                 'l' => inputs.rot_right = true,
 
@@ -211,7 +214,7 @@ fn main() {
             if inputs.move_right {
                 horizontal_motion += 1;
             }
-            game_state.move_block_horizontal(horizontal_motion);
+            game_state.move_active_block_horizontal(horizontal_motion);
 
             let mut relative_rotation: i32 = 0;
             if inputs.rot_left {
@@ -222,11 +225,16 @@ fn main() {
             }
             game_state.rotate_block(relative_rotation);
 
+            if inputs.drop {
+                game_state.quick_drop();
+            }
+
             inputs = Inputs {
                 move_left: false,
                 move_right: false,
                 rot_left: false,
                 rot_right: false,
+                drop: false,
             };
         }
 

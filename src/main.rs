@@ -98,13 +98,62 @@ where
     window.mvaddstr(y_center, x_center - (text.as_ref().len() / 2) as i32, text);
 }
 
+#[derive(Debug)]
 enum Screen {
     StartMenu,
     Game,
 }
 
-fn run_start_menu(_window: &pancurses::Window) -> Option<Screen> {
-    Some(Screen::Game)
+fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
+    const TITLE_LINES: [&str; 7] = [
+        r#" _____________"#,
+        r#"/\____________\ ___  _____  ___  .   .   ___   _____"#,
+        r#"\/___/\   \___/ \___    \   \ _)  \   \  \ ___    \"#,
+        r#"     \ \   \     \___    \   \  \  \___\   ___\    \"#,
+        r#"      \ \   \"#,
+        r#"       \ \___\"#,
+        r#"        \/___/"#,
+    ];
+
+    let title_rect = {
+        let (window_height, window_width) = window.get_max_yx();
+        let title_width = TITLE_LINES.iter().map(|line| line.len()).max().unwrap() as i32;
+        const TITLE_HEIGHT: i32 = TITLE_LINES.len() as i32;
+
+        Rect {
+            // center the title horizontally
+            left: (window_width - title_width) / 2,
+            // place the title just above the horizontal divide
+            top: (window_height / 2) - (TITLE_HEIGHT + 1),
+            width: title_width,
+            height: TITLE_HEIGHT,
+        }
+    };
+
+    loop {
+        // clear the screen
+        window.erase();
+
+        // Render the title card
+        for (i, title_line) in TITLE_LINES.iter().enumerate() {
+            let row_offset = i as i32;
+            window.mvaddstr(row_offset + title_rect.top, title_rect.left, title_line);
+        }
+
+        // Input handling
+        // TODO: I think this input system might need some refactoring to share with the start menu
+        if let Some(pancurses::Input::Character(ch)) = window.getch() {
+            match ch {
+                // check for movement inputs
+                's' => return Some(Screen::Game),
+                'q' => return None,
+                _ => (),
+            }
+        };
+
+        // blit the next frame
+        window.refresh();
+    }
 }
 
 fn run_game(window: &pancurses::Window) -> Option<Screen> {
@@ -119,42 +168,42 @@ fn run_game(window: &pancurses::Window) -> Option<Screen> {
     const BOARD_HEIGHT: i32 = 20;
 
     let (window_height, window_width) = window.get_max_yx();
-    let board_rect: Rect = Rect {
+    let board_rect = Rect {
         left: (window_width / 2) - BOARD_WIDTH - 2, // arrange the board on the left side of the middle of the screen
         top: (window_height - BOARD_HEIGHT) / 2,    // center the board within the window
         width: BOARD_WIDTH,
         height: 20,
     };
 
-    let board_frame_rect: Rect = Rect {
+    let board_frame_rect = Rect {
         left: board_rect.left - 1,
         top: board_rect.top - 1,
         width: board_rect.width + 2,
         height: board_rect.height + 2,
     };
 
-    let title_rect: Rect = Rect {
+    let title_rect = Rect {
         left: board_frame_rect.right() + 2,
         top: board_frame_rect.top,
         width: (TITLE.len() + 4) as i32,
         height: 3,
     };
 
-    let preview_frame_rect: Rect = Rect {
+    let preview_frame_rect = Rect {
         left: title_rect.left,
         top: title_rect.bottom() + 2,
         width: 6,
         height: 6,
     };
 
-    let preview_rect: Rect = Rect {
+    let preview_rect = Rect {
         left: preview_frame_rect.left + 1,
         top: preview_frame_rect.top + 1,
         width: preview_frame_rect.width - 2,
         height: preview_frame_rect.height - 2,
     };
 
-    let score_frame_rect: Rect = Rect {
+    let score_frame_rect = Rect {
         left: preview_frame_rect.left,
         top: preview_frame_rect.bottom() + 2,
         width: 14,
@@ -192,6 +241,7 @@ fn run_game(window: &pancurses::Window) -> Option<Screen> {
 
         // Input handling
         let next_key = window.getch();
+        // TODO: I think this input system might need some refactoring to share with the start menu
         if let Some(pancurses::Input::Character(ch)) = next_key {
             match ch {
                 // check for movement inputs
@@ -370,6 +420,7 @@ fn main() {
     // Run the game until we quit
     let mut screen = Screen::StartMenu;
     loop {
+        println!("Running {:?}", screen);
         // Run the current screen until it signals a transition
         let next_screen = match screen {
             Screen::StartMenu => run_start_menu(&window),
@@ -377,14 +428,12 @@ fn main() {
         };
 
         // If the transition includes a new screen start rendering that.
+        println!("Next {:?}", next_screen);
         screen = match next_screen {
             Some(s) => s,
             None => break,
         }
     }
-
-    // Run the game
-    run_game(&window);
 
     // Close the window
     pancurses::endwin();

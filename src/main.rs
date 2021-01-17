@@ -503,20 +503,80 @@ fn run_game(window: &pancurses::Window) -> Option<Screen> {
         window.refresh();
     }
 
-    Some(Screen::LeaderboardUpdate(game_state.score()))
+    Some(Screen::LeaderboardUpdate(
+        1750, /*TODO: game_state.score()*/
+    ))
+}
+
+fn display_leaderboard(
+    window: &pancurses::Window,
+    leaderboard: &Leaderboard,
+    skip_entry: Option<usize>,
+) {
+    let leaderboard_rect = {
+        //      Leaderboard
+        //
+        // #00      FML      00000
+        //
+        // #01      FML      00000
+        // ...
+        // #10      FML      00000
+        const LEADERBOARD_ENTRY_WIDTH: i32 = 21;
+        const LEADERBOARD_HEIGHT: i32 = (2 * (Leaderboard::max_entries() + 1) - 1) as i32;
+
+        let (window_height, window_width) = window.get_max_yx();
+        Rect {
+            left: (window_width - LEADERBOARD_ENTRY_WIDTH) / 2,
+            top: (window_height - LEADERBOARD_HEIGHT) / 2,
+            width: LEADERBOARD_ENTRY_WIDTH,
+            height: LEADERBOARD_HEIGHT,
+        }
+    };
+
+    let leaderboard_frame_rect = Rect {
+        left: leaderboard_rect.left - 1,
+        top: leaderboard_rect.top - 1,
+        width: leaderboard_rect.width + 2,
+        height: leaderboard_rect.height + 2,
+    };
+
+    draw_frame(&window, &leaderboard_frame_rect);
+    draw_text_centered(
+        &window,
+        "Leaderboard",
+        leaderboard_rect.center_x(),
+        leaderboard_rect.top,
+    );
+
+    for i in 0..Leaderboard::max_entries() {
+        let entry = leaderboard.entry(i);
+        let (name, score) = entry
+            .map(|e| (e.name.as_ref(), e.score))
+            .unwrap_or(("---", 0));
+
+        let mut leaderboard_pos = i + 1;
+        if skip_entry.is_some() && skip_entry.unwrap() <= i {
+            leaderboard_pos += 1;
+        }
+
+        if leaderboard_pos <= Leaderboard::max_entries() {
+            let row_offset = (leaderboard_pos * 2) as i32;
+
+            draw_text_centered(
+                &window,
+                &format!("#{:02}    {}    {:05}", leaderboard_pos, name, score),
+                leaderboard_rect.center_x(),
+                leaderboard_rect.top + row_offset,
+            );
+        }
+    }
 }
 
 fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Screen> {
-    // load leaderboard
     let mut leaderboard = Leaderboard::load("data/leaderboard");
 
-    let new_leaderboard_position = leaderboard.get_place_on_leaderboard(score);
-    if new_leaderboard_position.is_some() {
-        // if score places on leaderboard, prompt for a new leaderboard entry
-        // write out leaderboard and redisplay
-
-        let (window_height, window_width) = window.get_max_yx();
-
+    let new_leaderboard_entry_pos = leaderboard.get_place_on_leaderboard(score);
+    if new_leaderboard_entry_pos.is_some() {
         let leaderboard_rect = {
             //      Leaderboard
             //
@@ -528,6 +588,7 @@ fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Sc
             const LEADERBOARD_ENTRY_WIDTH: i32 = 21;
             const LEADERBOARD_HEIGHT: i32 = (2 * (Leaderboard::max_entries() + 1) - 1) as i32;
 
+            let (window_height, window_width) = window.get_max_yx();
             Rect {
                 left: (window_width - LEADERBOARD_ENTRY_WIDTH) / 2,
                 top: (window_height - LEADERBOARD_HEIGHT) / 2,
@@ -536,59 +597,46 @@ fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Sc
             }
         };
 
-        let leaderboard_frame_rect = Rect {
-            left: leaderboard_rect.left - 1,
-            top: leaderboard_rect.top - 1,
-            width: leaderboard_rect.width + 2,
-            height: leaderboard_rect.height + 2,
-        };
-
-        loop {
-            // render leaderboard entries
+        let new_leaderboard_name = loop {
             window.erase();
+            display_leaderboard(&window, &leaderboard, new_leaderboard_entry_pos);
 
-            draw_frame(&window, &leaderboard_frame_rect);
+            let leaderboard_pos = new_leaderboard_entry_pos.unwrap() + 1;
+            let row_offset = (leaderboard_pos * 2) as i32;
+
+            // Render the new entry WIP space
+            window.attron(pancurses::A_BLINK);
             draw_text_centered(
                 &window,
-                "Leaderboard",
+                &format!("#{:02}    {}    {:05}", leaderboard_pos, "___", score),
                 leaderboard_rect.center_x(),
-                leaderboard_rect.top,
+                leaderboard_rect.top + row_offset,
             );
-
-            for i in 0..Leaderboard::max_entries() {
-                let entry = leaderboard.entry(i);
-                let (name, score) = entry
-                    .map(|e| (e.name.as_ref(), e.score))
-                    .unwrap_or(("---", 0));
-
-                let entry_str = format!("#{:02}    {}    {:05}", i + 1, name, score);
-                let entry_row = (i + 1) * 2;
-                draw_text_centered(
-                    &window,
-                    &entry_str,
-                    leaderboard_rect.center_x(),
-                    leaderboard_rect.top + entry_row as i32,
-                );
-            }
+            window.attroff(pancurses::A_BLINK);
 
             window.refresh();
-
-            // TODO: just temporary to force a break
             std::thread::sleep(std::time::Duration::from_secs(3));
-            break;
-        }
+            break "TS9";
+        };
 
-        leaderboard.add_score("TST", score);
+        leaderboard.add_score(new_leaderboard_name, score);
         leaderboard.save("data/leaderboard");
     }
 
     Some(Screen::Leaderboard)
 }
 
-fn run_leaderboard_display(_window: &pancurses::Window) -> Option<Screen> {
-    // TODO!
-    // load leaderboard
-    // display leaderboard
+fn run_leaderboard_display(window: &pancurses::Window) -> Option<Screen> {
+    let leaderboard = Leaderboard::load("data/leaderboard");
+
+    loop {
+        window.erase();
+        display_leaderboard(&window, &leaderboard, None);
+        window.refresh();
+        std::thread::sleep(std::time::Duration::from_secs(3));
+        break;
+    }
+
     Some(Screen::StartMenu)
 }
 

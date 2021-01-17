@@ -113,51 +113,56 @@ fn main() {
     let mut last_frame_time = time::Instant::now();
     let mut last_input_handled = time::Instant::now();
 
-    const BOARD_RECT: Rect = Rect {
-        left: 1,
-        top: 1,
-        width: 10,
+    // standard tetris board size
+    const BOARD_WIDTH: i32 = 10;
+    const BOARD_HEIGHT: i32 = 20;
+
+    let (window_height, window_width) = window.get_max_yx();
+    let board_rect: Rect = Rect {
+        left: (window_width / 2) - BOARD_WIDTH - 2, // arrange the board on the left side of the middle of the screen
+        top: (window_height - BOARD_HEIGHT) / 2,    // center the board within the window
+        width: BOARD_WIDTH,
         height: 20,
     };
 
-    const BOARD_FRAME_RECT: Rect = Rect {
-        left: BOARD_RECT.left - 1,
-        top: BOARD_RECT.top - 1,
-        width: BOARD_RECT.width + 2,
-        height: BOARD_RECT.height + 2,
+    let board_frame_rect: Rect = Rect {
+        left: board_rect.left - 1,
+        top: board_rect.top - 1,
+        width: board_rect.width + 2,
+        height: board_rect.height + 2,
     };
 
-    const TITLE_RECT: Rect = Rect {
-        left: BOARD_FRAME_RECT.right() + 2,
-        top: BOARD_FRAME_RECT.top,
+    let title_rect: Rect = Rect {
+        left: board_frame_rect.right() + 2,
+        top: board_frame_rect.top,
         width: (TITLE.len() + 4) as i32,
         height: 3,
     };
 
-    const PREVIEW_FRAME_RECT: Rect = Rect {
-        left: TITLE_RECT.left,
-        top: TITLE_RECT.bottom() + 2,
+    let preview_frame_rect: Rect = Rect {
+        left: title_rect.left,
+        top: title_rect.bottom() + 2,
         width: 6,
         height: 6,
     };
 
-    const PREVIEW_RECT: Rect = Rect {
-        left: PREVIEW_FRAME_RECT.left + 1,
-        top: PREVIEW_FRAME_RECT.top + 1,
-        width: PREVIEW_FRAME_RECT.width - 2,
-        height: PREVIEW_FRAME_RECT.height - 2,
+    let preview_rect: Rect = Rect {
+        left: preview_frame_rect.left + 1,
+        top: preview_frame_rect.top + 1,
+        width: preview_frame_rect.width - 2,
+        height: preview_frame_rect.height - 2,
     };
 
-    const SCORE_FRAME_RECT: Rect = Rect {
-        left: PREVIEW_FRAME_RECT.left,
-        top: PREVIEW_FRAME_RECT.bottom() + 2,
+    let score_frame_rect: Rect = Rect {
+        left: preview_frame_rect.left,
+        top: preview_frame_rect.bottom() + 2,
         width: 14,
         height: 4,
     };
 
     let mut game_state = GameState::new(
-        BOARD_RECT.width,
-        BOARD_RECT.height,
+        board_rect.width,
+        board_rect.height,
         Box::new(ThreadRangeRng::new()),
     );
 
@@ -247,22 +252,22 @@ fn main() {
         window.erase();
 
         // Render the tetris title
-        draw_frame(&window, &TITLE_RECT);
-        draw_text_centered(&window, TITLE, TITLE_RECT.center_x(), TITLE_RECT.center_y());
+        draw_frame(&window, &title_rect);
+        draw_text_centered(&window, TITLE, title_rect.center_x(), title_rect.center_y());
 
         // Render next piece preview
         draw_text_centered(
             &window,
             "Next",
-            PREVIEW_FRAME_RECT.center_x(),
-            PREVIEW_FRAME_RECT.top - 1,
+            preview_frame_rect.center_x(),
+            preview_frame_rect.top - 1,
         );
-        draw_frame(&window, &PREVIEW_FRAME_RECT);
+        draw_frame(&window, &preview_frame_rect);
         render_block(
             &window,
             Vec2::zero(),
-            PREVIEW_RECT.left,
-            PREVIEW_RECT.top,
+            preview_rect.left,
+            preview_rect.top,
             game_state.preview_block(),
         );
 
@@ -270,19 +275,19 @@ fn main() {
         draw_text_centered(
             &window,
             &format!("Level: {:05}", game_state.level()),
-            SCORE_FRAME_RECT.center_x(),
-            SCORE_FRAME_RECT.center_y() - 1,
+            score_frame_rect.center_x(),
+            score_frame_rect.center_y() - 1,
         );
         draw_text_centered(
             &window,
             &format!("Score: {:05}", game_state.score()),
-            SCORE_FRAME_RECT.center_x(),
-            SCORE_FRAME_RECT.center_y(),
+            score_frame_rect.center_x(),
+            score_frame_rect.center_y(),
         );
-        draw_frame(&window, &SCORE_FRAME_RECT);
+        draw_frame(&window, &score_frame_rect);
 
         // Render the board frame
-        draw_frame(&window, &BOARD_FRAME_RECT);
+        draw_frame(&window, &board_frame_rect);
 
         // Render the active piece
         if let Some((block, block_pos)) = game_state.active_block() {
@@ -291,12 +296,12 @@ fn main() {
             for cell in &block.cells() {
                 let start_row = cell.y + block_pos.y;
                 let col = cell.x + block_pos.x;
-                for row in start_row..BOARD_RECT.height {
-                    window.mvaddch(row + BOARD_RECT.top, col + BOARD_RECT.left, '-');
+                for row in start_row..board_rect.height {
+                    window.mvaddch(row + board_rect.top, col + board_rect.left, '-');
                 }
             }
 
-            render_block(&window, block_pos, BOARD_RECT.left, BOARD_RECT.top, block);
+            render_block(&window, block_pos, board_rect.left, board_rect.top, block);
         }
 
         // Render the settled pieces
@@ -304,8 +309,8 @@ fn main() {
             render_cell(
                 &window,
                 cell_pos,
-                BOARD_RECT.left,
-                BOARD_RECT.top,
+                board_rect.left,
+                board_rect.top,
                 block_type,
             );
         });
@@ -326,8 +331,8 @@ fn main() {
             draw_text_centered(
                 &window,
                 "Game Over",
-                BOARD_RECT.center_x(),
-                BOARD_RECT.center_y(),
+                board_rect.center_x(),
+                board_rect.center_y(),
             );
             window.attroff(pancurses::A_BLINK);
         }
@@ -337,8 +342,8 @@ fn main() {
             draw_text_centered(
                 &window,
                 "PAUSE",
-                BOARD_RECT.center_x(),
-                BOARD_RECT.center_y(),
+                board_rect.center_x(),
+                board_rect.center_y(),
             );
             window.attroff(pancurses::A_BLINK);
         }

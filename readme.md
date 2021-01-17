@@ -81,8 +81,10 @@
 
 ![Image of increased fall speed](demo/13-fallspeed.gif)
 
-- [ ] Handle quick fall
-- [ ] Show piece fall preview
+- [X] [Handle quick drop and show drop preview](https://github.com/scottnm/tetrust/commit/FILL)
+
+![Image of quick drop and drop preview](demo/14-quick-drop.gif)
+
 - [ ] Add start screen
 - [ ] Add high score logging
 - [ ] Add high score screen from start

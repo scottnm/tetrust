@@ -101,4 +101,5 @@
 
 - [ ] Add high score logging
 - [ ] Add high score screen from start
+- [ ] Add CI/CD to github repo
 

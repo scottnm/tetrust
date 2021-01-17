@@ -98,7 +98,7 @@ where
     window.mvaddstr(y_center, x_center - (text.as_ref().len() / 2) as i32, text);
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Screen {
     StartMenu,
     Game,
@@ -131,8 +131,9 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
         }
     };
 
-    let menu_cursor: usize = 0;
+    let mut menu_cursor: usize = 0;
     const MENU_OPTIONS: [&str; 2] = ["Start Game", "Quit"];
+    const MENU_OPTION_RESULTS: [Option<Screen>; 2] = [Some(Screen::Game), None];
 
     let menu_rect = {
         let menu_width = MENU_OPTIONS
@@ -174,11 +175,13 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
 
         // Input handling
         // TODO: I think this input system might need some refactoring to share with the start menu
+        const ENTER_KEY: char = 10 as char;
         if let Some(pancurses::Input::Character(ch)) = window.getch() {
             match ch {
                 // check for movement inputs
-                's' => return Some(Screen::Game),
-                'q' => return None,
+                'w' => menu_cursor = menu_cursor.wrapping_add(1) % MENU_OPTIONS.len(),
+                's' => menu_cursor = menu_cursor.wrapping_sub(1) % MENU_OPTIONS.len(),
+                ENTER_KEY => return MENU_OPTION_RESULTS[menu_cursor],
                 _ => (),
             }
         };

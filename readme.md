@@ -95,7 +95,7 @@
 
 ![Image of quick drop and drop preview](demo/14-quick-drop.gif)
 
-- [X] [Add start screen](https://github.com/scottnm/tetrust/commit/FILLMEIN)
+- [X] [Add start screen](https://github.com/scottnm/tetrust/commit/93b6d95)
 
 ![Image of start screen](demo/15-screens.gif)
 

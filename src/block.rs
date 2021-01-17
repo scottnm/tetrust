@@ -151,18 +151,6 @@ impl BlockType {
             BlockType::L => '\\',
         }
     }
-
-    pub fn sprite_color(&self) -> i16 {
-        match *self {
-            BlockType::I => pancurses::COLOR_WHITE,
-            BlockType::O => pancurses::COLOR_RED,
-            BlockType::T => pancurses::COLOR_CYAN,
-            BlockType::S => pancurses::COLOR_GREEN,
-            BlockType::Z => pancurses::COLOR_MAGENTA,
-            BlockType::J => pancurses::COLOR_YELLOW,
-            BlockType::L => pancurses::COLOR_BLUE,
-        }
-    }
 }
 
 impl Block {

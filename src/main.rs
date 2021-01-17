@@ -14,9 +14,63 @@ use std::time;
 
 const TITLE: &str = "TETRUST";
 
-fn get_color_pair(color_index: usize, invert: bool) -> pancurses::chtype {
-    let invert_offset = if invert { BLOCKTYPES.len() } else { 0 };
-    pancurses::COLOR_PAIR((color_index + invert_offset) as pancurses::chtype)
+struct Colors {}
+
+impl Colors {
+    const MENU_COLOR_PALETTE: [i16; 4] = [
+        pancurses::COLOR_CYAN,
+        pancurses::COLOR_GREEN,
+        pancurses::COLOR_MAGENTA,
+        pancurses::COLOR_YELLOW,
+    ];
+
+    fn setup() {
+        pancurses::start_color();
+
+        assert!(
+            (BLOCKTYPES.len() + Self::MENU_COLOR_PALETTE.len()) < pancurses::COLOR_PAIRS() as usize
+        );
+
+        fn block_color(block_type: BlockType) -> i16 {
+            match block_type {
+                BlockType::I => pancurses::COLOR_WHITE,
+                BlockType::O => pancurses::COLOR_RED,
+                BlockType::T => pancurses::COLOR_CYAN,
+                BlockType::S => pancurses::COLOR_GREEN,
+                BlockType::Z => pancurses::COLOR_MAGENTA,
+                BlockType::J => pancurses::COLOR_YELLOW,
+                BlockType::L => pancurses::COLOR_BLUE,
+            }
+        }
+
+        // slots 1->BLOCKTYPES.len() are for block colors
+        // must be kept in sync with get_block_color_pair()
+        for block_type in BLOCKTYPES.iter() {
+            pancurses::init_pair(
+                *block_type as i16,
+                pancurses::COLOR_BLACK,
+                block_color(*block_type),
+            );
+        }
+
+        // slots BLOCKTYPES.len()+1 and above are for menu colors
+        // must be kept in sync with get_menu_color_pair()
+        for (i, menu_color) in Self::MENU_COLOR_PALETTE.iter().enumerate() {
+            pancurses::init_pair(
+                (i + 1 + BLOCKTYPES.len()) as i16,
+                *menu_color,
+                pancurses::COLOR_BLACK,
+            );
+        }
+    }
+
+    fn get_block_color_pair(block_type: BlockType) -> pancurses::chtype {
+        pancurses::COLOR_PAIR(block_type as pancurses::chtype)
+    }
+
+    fn get_menu_color_pair(menu_color_index: usize) -> pancurses::chtype {
+        pancurses::COLOR_PAIR((menu_color_index + BLOCKTYPES.len() + 1) as pancurses::chtype)
+    }
 }
 
 fn render_cell(
@@ -27,7 +81,7 @@ fn render_cell(
     block_type: BlockType,
 ) {
     let sprite_char = block_type.sprite_char();
-    let color_pair = get_color_pair(block_type as usize, false);
+    let color_pair = Colors::get_block_color_pair(block_type);
     window.attron(color_pair);
     window.mvaddch(
         cell_rel_pos.y + rel_pos_offset_y,
@@ -45,7 +99,7 @@ fn render_block(
     block: Block,
 ) {
     let sprite_char = block.sprite_char();
-    let color_pair = get_color_pair(block.block_type as usize, false);
+    let color_pair = Colors::get_block_color_pair(block.block_type);
     window.attron(color_pair);
     for cell_pos in &block.cells() {
         // Ok to blit block sprite even if position is OOB
@@ -56,28 +110,6 @@ fn render_block(
         );
     }
     window.attroff(color_pair);
-}
-
-fn setup_colors() {
-    pancurses::start_color();
-
-    assert!(BLOCKTYPES.len() * 2 < pancurses::COLOR_PAIRS() as usize);
-
-    for block_type in BLOCKTYPES.iter() {
-        let block_color_pair_index = *block_type as i16;
-
-        pancurses::init_pair(
-            block_color_pair_index,
-            pancurses::COLOR_BLACK,
-            block_type.sprite_color(),
-        );
-
-        pancurses::init_pair(
-            block_color_pair_index + BLOCKTYPES.len() as i16,
-            block_type.sprite_color(),
-            pancurses::COLOR_BLACK,
-        );
-    }
 }
 
 fn draw_frame(window: &pancurses::Window, frame_rect: &Rect) {
@@ -175,7 +207,7 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
         // Render the title card
         for (i, title_line) in TITLE_LINES.iter().enumerate() {
             let row_offset = (i as i32) + title_rect.top;
-            let color_pair = get_color_pair(i + 1, true);
+            let color_pair = Colors::get_menu_color_pair(i % 4);
             window.attron(color_pair);
             window.mvaddstr(row_offset, title_rect.left, title_line);
             window.attroff(color_pair);
@@ -467,7 +499,7 @@ fn main() {
     window.nodelay(true);
 
     // setup the color system
-    setup_colors();
+    Colors::setup();
 
     // Run the game until we quit
     let mut screen = Screen::StartMenu;

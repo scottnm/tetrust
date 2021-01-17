@@ -12,6 +12,67 @@ use crate::randwrapper::*;
 use crate::util::*;
 use std::time;
 
+const TITLE: &str = "TETRUST";
+
+struct Colors {}
+
+impl Colors {
+    const MENU_COLOR_PALETTE: [i16; 4] = [
+        pancurses::COLOR_CYAN,
+        pancurses::COLOR_GREEN,
+        pancurses::COLOR_MAGENTA,
+        pancurses::COLOR_YELLOW,
+    ];
+
+    fn setup() {
+        pancurses::start_color();
+
+        assert!(
+            (BLOCKTYPES.len() + Self::MENU_COLOR_PALETTE.len()) < pancurses::COLOR_PAIRS() as usize
+        );
+
+        fn block_color(block_type: BlockType) -> i16 {
+            match block_type {
+                BlockType::I => pancurses::COLOR_WHITE,
+                BlockType::O => pancurses::COLOR_RED,
+                BlockType::T => pancurses::COLOR_CYAN,
+                BlockType::S => pancurses::COLOR_GREEN,
+                BlockType::Z => pancurses::COLOR_MAGENTA,
+                BlockType::J => pancurses::COLOR_YELLOW,
+                BlockType::L => pancurses::COLOR_BLUE,
+            }
+        }
+
+        // slots 1->BLOCKTYPES.len() are for block colors
+        // must be kept in sync with get_block_color_pair()
+        for block_type in BLOCKTYPES.iter() {
+            pancurses::init_pair(
+                *block_type as i16,
+                pancurses::COLOR_BLACK,
+                block_color(*block_type),
+            );
+        }
+
+        // slots BLOCKTYPES.len()+1 and above are for menu colors
+        // must be kept in sync with get_menu_color_pair()
+        for (i, menu_color) in Self::MENU_COLOR_PALETTE.iter().enumerate() {
+            pancurses::init_pair(
+                (i + 1 + BLOCKTYPES.len()) as i16,
+                *menu_color,
+                pancurses::COLOR_BLACK,
+            );
+        }
+    }
+
+    fn get_block_color_pair(block_type: BlockType) -> pancurses::chtype {
+        pancurses::COLOR_PAIR(block_type as pancurses::chtype)
+    }
+
+    fn get_menu_color_pair(menu_color_index: usize) -> pancurses::chtype {
+        pancurses::COLOR_PAIR((menu_color_index + BLOCKTYPES.len() + 1) as pancurses::chtype)
+    }
+}
+
 fn render_cell(
     window: &pancurses::Window,
     cell_rel_pos: Vec2,
@@ -20,7 +81,7 @@ fn render_cell(
     block_type: BlockType,
 ) {
     let sprite_char = block_type.sprite_char();
-    let color_pair = pancurses::COLOR_PAIR(block_type as pancurses::chtype);
+    let color_pair = Colors::get_block_color_pair(block_type);
     window.attron(color_pair);
     window.mvaddch(
         cell_rel_pos.y + rel_pos_offset_y,
@@ -38,7 +99,7 @@ fn render_block(
     block: Block,
 ) {
     let sprite_char = block.sprite_char();
-    let color_pair = pancurses::COLOR_PAIR(block.block_type as pancurses::chtype);
+    let color_pair = Colors::get_block_color_pair(block.block_type);
     window.attron(color_pair);
     for cell_pos in &block.cells() {
         // Ok to blit block sprite even if position is OOB
@@ -49,19 +110,6 @@ fn render_block(
         );
     }
     window.attroff(color_pair);
-}
-
-fn setup_colors() {
-    pancurses::start_color();
-
-    assert!(BLOCKTYPES.len() < pancurses::COLOR_PAIRS() as usize);
-    for block_type in BLOCKTYPES.iter() {
-        pancurses::init_pair(
-            *block_type as i16,
-            pancurses::COLOR_BLACK,
-            block_type.sprite_color(),
-        );
-    }
 }
 
 fn draw_frame(window: &pancurses::Window, frame_rect: &Rect) {
@@ -96,19 +144,105 @@ where
     window.mvaddstr(y_center, x_center - (text.as_ref().len() / 2) as i32, text);
 }
 
-fn main() {
-    let window = pancurses::initscr();
+#[derive(Debug, Clone, Copy)]
+enum Screen {
+    StartMenu,
+    Game,
+}
 
+fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
+    const TITLE_LINES: [&str; 7] = [
+        r#" _____________"#,
+        r#"/\____________\ ___  _____  ___  .   .   ___   _____"#,
+        r#"\/___/\   \___/ \___    \   \ _)  \   \  \ ___    \"#,
+        r#"     \ \   \     \___    \   \  \  \___\   ___\    \"#,
+        r#"      \ \   \"#,
+        r#"       \ \___\"#,
+        r#"        \/___/"#,
+    ];
+
+    let (window_height, window_width) = window.get_max_yx();
+
+    let title_rect = {
+        let title_width = TITLE_LINES.iter().map(|line| line.len()).max().unwrap() as i32;
+        const TITLE_HEIGHT: i32 = TITLE_LINES.len() as i32;
+
+        Rect {
+            // center the title horizontally
+            left: (window_width - title_width) / 2,
+            // place the title just above the horizontal divide
+            top: (window_height / 2) - (TITLE_HEIGHT + 1),
+            width: title_width,
+            height: TITLE_HEIGHT,
+        }
+    };
+
+    let mut menu_cursor: usize = 0;
+    const MENU_OPTIONS: [&str; 2] = ["Start Game", "Quit"];
+    const MENU_OPTION_RESULTS: [Option<Screen>; MENU_OPTIONS.len()] = [Some(Screen::Game), None];
+
+    let menu_rect = {
+        let menu_width = MENU_OPTIONS
+            .iter()
+            .map(|option_text| option_text.len())
+            .max()
+            .unwrap() as i32;
+        const MENU_HEIGHT: i32 = MENU_OPTIONS.len() as i32;
+
+        Rect {
+            // center the menu options horizontally
+            left: (window_width - menu_width) / 2,
+            // place the menu options just below the horizontal divide
+            top: (window_height / 2) + 1,
+            // Add 2 characters to the menu width to account for the cursor
+            width: menu_width + 2,
+            height: MENU_HEIGHT,
+        }
+    };
+
+    loop {
+        // clear the screen
+        window.erase();
+
+        // Render the title card
+        for (i, title_line) in TITLE_LINES.iter().enumerate() {
+            let row_offset = (i as i32) + title_rect.top;
+            let color_pair = Colors::get_menu_color_pair(i % 4);
+            window.attron(color_pair);
+            window.mvaddstr(row_offset, title_rect.left, title_line);
+            window.attroff(color_pair);
+        }
+
+        // Render the menu options
+        for (i, menu_line) in MENU_OPTIONS.iter().enumerate() {
+            let row_offset = (i as i32) + menu_rect.top;
+            if i == menu_cursor {
+                window.mvaddstr(row_offset, menu_rect.left, "> ");
+            }
+            window.mvaddstr(row_offset, menu_rect.left + 2, menu_line);
+        }
+
+        // Input handling
+        // TODO: I think this input system might need some refactoring to share with the start menu
+        const ENTER_KEY: char = 10 as char;
+        if let Some(pancurses::Input::Character(ch)) = window.getch() {
+            match ch {
+                // check for movement inputs
+                'w' => menu_cursor = menu_cursor.wrapping_add(1) % MENU_OPTIONS.len(),
+                's' => menu_cursor = menu_cursor.wrapping_sub(1) % MENU_OPTIONS.len(),
+                ENTER_KEY => return MENU_OPTION_RESULTS[menu_cursor],
+                _ => (),
+            }
+        };
+
+        // blit the next frame
+        window.refresh();
+    }
+}
+
+fn run_game(window: &pancurses::Window) -> Option<Screen> {
     const INPUT_POLL_PERIOD: time::Duration = time::Duration::from_millis(125);
     let mut frame_speed_modifier = 1.0f32;
-
-    const TITLE: &str = "TETRUST";
-    pancurses::noecho();
-    pancurses::cbreak();
-    pancurses::curs_set(0);
-    pancurses::set_title(TITLE);
-    window.nodelay(true);
-    setup_colors();
 
     let mut last_frame_time = time::Instant::now();
     let mut last_input_handled = time::Instant::now();
@@ -118,42 +252,42 @@ fn main() {
     const BOARD_HEIGHT: i32 = 20;
 
     let (window_height, window_width) = window.get_max_yx();
-    let board_rect: Rect = Rect {
+    let board_rect = Rect {
         left: (window_width / 2) - BOARD_WIDTH - 2, // arrange the board on the left side of the middle of the screen
         top: (window_height - BOARD_HEIGHT) / 2,    // center the board within the window
         width: BOARD_WIDTH,
         height: 20,
     };
 
-    let board_frame_rect: Rect = Rect {
+    let board_frame_rect = Rect {
         left: board_rect.left - 1,
         top: board_rect.top - 1,
         width: board_rect.width + 2,
         height: board_rect.height + 2,
     };
 
-    let title_rect: Rect = Rect {
+    let title_rect = Rect {
         left: board_frame_rect.right() + 2,
         top: board_frame_rect.top,
         width: (TITLE.len() + 4) as i32,
         height: 3,
     };
 
-    let preview_frame_rect: Rect = Rect {
+    let preview_frame_rect = Rect {
         left: title_rect.left,
         top: title_rect.bottom() + 2,
         width: 6,
         height: 6,
     };
 
-    let preview_rect: Rect = Rect {
+    let preview_rect = Rect {
         left: preview_frame_rect.left + 1,
         top: preview_frame_rect.top + 1,
         width: preview_frame_rect.width - 2,
         height: preview_frame_rect.height - 2,
     };
 
-    let score_frame_rect: Rect = Rect {
+    let score_frame_rect = Rect {
         left: preview_frame_rect.left,
         top: preview_frame_rect.bottom() + 2,
         width: 14,
@@ -191,6 +325,7 @@ fn main() {
 
         // Input handling
         let next_key = window.getch();
+        // TODO: I think this input system might need some refactoring to share with the start menu
         if let Some(pancurses::Input::Character(ch)) = next_key {
             match ch {
                 // check for movement inputs
@@ -351,8 +486,39 @@ fn main() {
         window.refresh();
     }
 
-    pancurses::endwin();
+    Some(Screen::StartMenu)
+}
 
-    println!("Lose!");
-    println!("Finished");
+fn main() {
+    // setup the window
+    let window = pancurses::initscr();
+    pancurses::noecho();
+    pancurses::cbreak();
+    pancurses::curs_set(0);
+    pancurses::set_title(TITLE);
+    window.nodelay(true);
+
+    // setup the color system
+    Colors::setup();
+
+    // Run the game until we quit
+    let mut screen = Screen::StartMenu;
+    loop {
+        println!("Running {:?}", screen);
+        // Run the current screen until it signals a transition
+        let next_screen = match screen {
+            Screen::StartMenu => run_start_menu(&window),
+            Screen::Game => run_game(&window),
+        };
+
+        // If the transition includes a new screen start rendering that.
+        println!("Next {:?}", next_screen);
+        screen = match next_screen {
+            Some(s) => s,
+            None => break,
+        }
+    }
+
+    // Close the window
+    pancurses::endwin();
 }

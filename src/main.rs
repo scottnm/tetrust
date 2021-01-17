@@ -273,9 +273,21 @@ fn main() {
         );
         draw_frame(&window, &SCORE_FRAME_RECT);
 
-        // Render the active piece
+        // Render the board frame
         draw_frame(&window, &BOARD_FRAME_RECT);
+
+        // Render the active piece
         if let Some((block, block_pos)) = game_state.active_block() {
+            // TOOD: mayhaps refactor this into its own helper?
+            // render the active piece's drop trail
+            for cell in &block.cells() {
+                let start_row = cell.y + block_pos.y;
+                let col = cell.x + block_pos.x;
+                for row in start_row..BOARD_RECT.height {
+                    window.mvaddch(row + BOARD_RECT.top, col + BOARD_RECT.left, '-');
+                }
+            }
+
             render_block(&window, block_pos, BOARD_RECT.left, BOARD_RECT.top, block);
         }
 

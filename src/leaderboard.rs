@@ -91,6 +91,11 @@ impl Leaderboard {
             }
         }
 
+        let next_slot = self.entries.len();
+        if next_slot < Leaderboard::max_entries() {
+            return Some(next_slot);
+        }
+
         None
     }
 

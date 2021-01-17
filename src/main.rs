@@ -16,6 +16,8 @@ use std::time;
 
 const TITLE: &str = "TETRUST";
 
+const LEADERBOARD_FILE_NAME: &str = "data/leaderboard";
+
 struct Colors {}
 
 impl Colors {
@@ -571,7 +573,10 @@ fn display_leaderboard(
 }
 
 fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Screen> {
-    let mut leaderboard = Leaderboard::load("data/leaderboard");
+    let mut leaderboard = {
+        let leaderboard_from_file = Leaderboard::load(LEADERBOARD_FILE_NAME);
+        leaderboard_from_file.unwrap_or(Leaderboard::new())
+    };
 
     let new_leaderboard_entry_pos = leaderboard.get_place_on_leaderboard(score);
     if new_leaderboard_entry_pos.is_some() {
@@ -652,7 +657,10 @@ fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Sc
 }
 
 fn run_leaderboard_display(window: &pancurses::Window) -> Option<Screen> {
-    let leaderboard = Leaderboard::load("data/leaderboard");
+    let leaderboard = {
+        let leaderboard_from_file = Leaderboard::load(LEADERBOARD_FILE_NAME);
+        leaderboard_from_file.unwrap_or(Leaderboard::new())
+    };
 
     loop {
         window.erase();

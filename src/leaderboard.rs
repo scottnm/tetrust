@@ -1,14 +1,16 @@
+#[derive(Debug, PartialEq, Eq)]
 pub struct LeaderboardEntry {
     pub name: String,
     pub score: usize,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Leaderboard {
     entries: Vec<LeaderboardEntry>,
 }
 
 impl LeaderboardEntry {
-    fn new<S: AsRef<str>>(name: S, score: usize) -> LeaderboardEntry {
+    pub fn new<S: AsRef<str>>(name: S, score: usize) -> LeaderboardEntry {
         assert_eq!(name.as_ref().len(), Leaderboard::entry_name_len());
         LeaderboardEntry {
             name: String::from(name.as_ref()),
@@ -26,19 +28,27 @@ impl Leaderboard {
         10
     }
 
-    pub fn load<S: AsRef<str>>(_file_name: S) -> Self {
-        Leaderboard {
+    pub fn new() -> Self {
+        Leaderboard { entries: vec![] }
+    }
+
+    pub fn load<S: AsRef<str>>(_file_name: S) -> Option<Self> {
+        Some(Leaderboard {
             entries: vec![
                 LeaderboardEntry::new("TS1", 2000),
                 LeaderboardEntry::new("TS2", 1500),
                 LeaderboardEntry::new("TS3", 1000),
                 LeaderboardEntry::new("TS4", 500),
             ],
-        }
+        })
     }
 
     pub fn save<S: AsRef<str>>(&self, _file_name: S) {
         // unimplemented!();
+    }
+
+    pub fn serialize(&self) -> String {
+        unimplemented!();
     }
 
     pub fn get_place_on_leaderboard(&self, score: usize) -> Option<usize> {

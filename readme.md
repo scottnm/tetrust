@@ -1,5 +1,15 @@
 # Tetrust
 
+```
+ _____________
+/\____________\ ___  _____  ___  .   .   ___   _____
+\/___/\   \___/ \___    \   \ _)  \   \  \ ___    \
+     \ \   \     \___    \   \  \  \___\   ___\    \
+      \ \   \
+       \ \___\
+        \/___/
+```
+
 ## Intent
 
 - Practice rust
@@ -63,7 +73,7 @@
 
 - [X] [Allow tetrominos to rotate](https://github.com/scottnm/tetrust/commit/3dd8bba32517b65c19e1ad4082612eb287630734)
 
-![Image of pieces rotation](demo/09-rotation.gif)
+![Image of pieces rotating](demo/09-rotation.gif)
 
 - [X] [Preview blocks](https://github.com/scottnm/tetrust/commit/c8e859c5857bb7a48843ab7108bff9692a0370e0)
 
@@ -85,7 +95,10 @@
 
 ![Image of quick drop and drop preview](demo/14-quick-drop.gif)
 
-- [ ] Add start screen
+- [X] [Add start screen](https://github.com/scottnm/tetrust/commit/FILLMEIN)
+
+![Image of start screen](demo/15-screens.gif)
+
 - [ ] Add high score logging
 - [ ] Add high score screen from start
 

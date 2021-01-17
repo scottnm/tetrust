@@ -81,7 +81,7 @@
 
 ![Image of increased fall speed](demo/13-fallspeed.gif)
 
-- [X] [Handle quick drop and show drop preview](https://github.com/scottnm/tetrust/commit/FILL)
+- [X] [Handle quick drop and show drop preview](https://github.com/scottnm/tetrust/commit/d97b914)
 
 ![Image of quick drop and drop preview](demo/14-quick-drop.gif)
 

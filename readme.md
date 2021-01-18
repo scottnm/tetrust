@@ -99,7 +99,7 @@
 
 ![Image of start screen](demo/15-screens.gif)
 
-- [X] [Add leaderboard](https://github.com/scottnm/tetrust/commit/FILLIN)
+- [X] [Add leaderboard](https://github.com/scottnm/tetrust/commit/d09425ff29ce4617cbe1d3dec9d45a0e845e51d6)
 
 ![Image of leaderboard](demo/16-leaderboard.gif)
 

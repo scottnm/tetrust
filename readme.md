@@ -105,5 +105,7 @@
 
 ![Image of leaderboard](demo/16-leaderboard.gif)
 
-- [X] ![Automated CI/CD testing](https://github.com/scottnm/tetrust/workflows/Tests/badge.svg)
+- [X] [Automated CI/CD testing](https://github.com/scottnm/tetrust/commit/2da6b6a456d97472b1790d94c260deb8cd8ba0bf)
+
+![Automated CI/CD testing](https://github.com/scottnm/tetrust/workflows/Tests/badge.svg)
 

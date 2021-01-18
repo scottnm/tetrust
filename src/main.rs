@@ -662,13 +662,10 @@ fn run_leaderboard_display(window: &pancurses::Window) -> Option<Screen> {
         leaderboard_from_file.unwrap_or(Leaderboard::new())
     };
 
-    loop {
-        window.erase();
-        display_leaderboard(&window, &leaderboard, None);
-        window.refresh();
-        std::thread::sleep(std::time::Duration::from_secs(3));
-        break;
-    }
+    window.erase();
+    display_leaderboard(&window, &leaderboard, None);
+    window.refresh();
+    std::thread::sleep(std::time::Duration::from_secs(3));
 
     Some(Screen::StartMenu)
 }

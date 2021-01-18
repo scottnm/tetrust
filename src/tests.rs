@@ -628,16 +628,24 @@ mod tests {
             },
             TestData {
                 score: 200,
-                expected_pos: 4,
+                expected_pos: 8,
             },
         ];
 
-        let final_score_indices: [usize; Leaderboard::max_entries()] =
-            [1, 7, 2, 0, 3, 6, 10, 5, 4, 8];
-
         fn name_from_index(i: usize) -> String {
-            format!("nm{}", i)
+            format!("n{:02}", i)
         }
+
+        let final_score_indices: [usize; Leaderboard::max_entries()] =
+            [1, 7, 2, 0, 3, 6, 5, 4, 10, 8];
+        let expected_entries: Vec<LeaderboardEntry> = final_score_indices
+            .iter()
+            .map(|final_score_index| LeaderboardEntry {
+                name: name_from_index(*final_score_index),
+                score: test_values[*final_score_index].score,
+            })
+            .collect();
+        let expected_final_leaderboard = Leaderboard::from_raw(expected_entries);
 
         for (i, test) in test_values.iter().enumerate() {
             let place = leaderboard.get_place_on_leaderboard(test.score);
@@ -651,12 +659,7 @@ mod tests {
         assert!(leaderboard.entry(final_score_indices.len() - 1).is_some());
 
         // Check each entry on the leaderboard
-        for (i, final_score_index) in final_score_indices.iter().enumerate() {
-            let final_score_data = &test_values[*final_score_index];
-            let expected_leaderboard_entry =
-                LeaderboardEntry::new(name_from_index(*final_score_index), final_score_data.score);
-            assert_eq!(leaderboard.entry(i), Some(&expected_leaderboard_entry))
-        }
+        assert_eq!(leaderboard, expected_final_leaderboard);
     }
 
     #[test]

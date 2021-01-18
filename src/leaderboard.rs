@@ -32,6 +32,11 @@ impl Leaderboard {
         Leaderboard { entries: vec![] }
     }
 
+    #[cfg(test)]
+    pub fn from_raw(entries: Vec<LeaderboardEntry>) -> Self {
+        Leaderboard { entries }
+    }
+
     pub fn load<P: AsRef<std::path::Path>>(file_name: P) -> Result<Self, &'static str> {
         let mut lines = Vec::new();
 

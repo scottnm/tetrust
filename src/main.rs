@@ -1,5 +1,8 @@
+#[macro_use]
+extern crate savefile_derive;
 extern crate pancurses;
 extern crate rand;
+extern crate savefile;
 mod block;
 mod game;
 mod leaderboard;
@@ -16,7 +19,7 @@ use std::time;
 
 const TITLE: &str = "TETRUST";
 
-const LEADERBOARD_FILE_NAME: &str = "data/leaderboard";
+const LEADERBOARD_FILE_NAME: &str = "data/leaderboard.bin";
 
 const ASCII_ESC: char = 27 as char;
 const ASCII_BACKSPACE: char = 8 as char;
@@ -656,7 +659,7 @@ fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Sc
             .map(|initial| if *initial == '_' { ' ' } else { *initial })
             .collect::<String>();
         leaderboard.add_score(name, score);
-        leaderboard.save("data/leaderboard");
+        leaderboard.save(LEADERBOARD_FILE_NAME);
     }
 
     Some(Screen::Leaderboard)

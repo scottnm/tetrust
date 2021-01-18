@@ -1,10 +1,10 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Savefile)]
 pub struct LeaderboardEntry {
     pub name: String,
     pub score: usize,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Savefile)]
 pub struct Leaderboard {
     entries: Vec<LeaderboardEntry>,
 }
@@ -37,56 +37,20 @@ impl Leaderboard {
         Leaderboard { entries }
     }
 
-    pub fn load<P: AsRef<std::path::Path>>(file_name: P) -> Result<Self, &'static str> {
-        let mut lines = Vec::new();
-
-        let file = std::fs::File::open(file_name).map_err(|_| "File not found")?;
-        use std::io::BufRead;
-        for line in std::io::BufReader::new(file).lines() {
-            let checked_line = line.map_err(|_| "unreadable line in file")?;
-            lines.push(checked_line);
-        }
-
-        if lines.len() > Leaderboard::max_entries() {
-            return Err("Too many lines in file");
-        }
-
-        let mut last_score = std::usize::MAX;
-        let mut entries = Vec::new();
-        for line in lines {
-            let mut line_elements = line.split(" ");
-            let name = line_elements.next().ok_or("missing name entry in file")?;
-            let score: usize = line_elements
-                .next()
-                .ok_or("missing score entry in file")?
-                .parse()
-                .map_err(|_| "invalid score entry in file")?;
-
-            if score > last_score {
-                return Err("Leaderboard file corrupted");
-            }
-
-            last_score = score;
-            entries.push(LeaderboardEntry::new(name, score));
-        }
-
-        Ok(Leaderboard { entries })
+    pub fn load<S: AsRef<str>>(file_name: S) -> Result<Self, String> {
+        let load_operation = savefile::load_file(file_name.as_ref(), 0);
+        let loaded_leaderboard = load_operation.map_err(|e| format!("{}", e))?;
+        Ok(loaded_leaderboard)
     }
 
-    pub fn save<P: AsRef<std::path::Path>>(&self, file_name: P) {
-        let file = std::fs::File::create(&file_name).unwrap();
-        let mut writer = std::io::LineWriter::new(file);
-
-        use std::io::Write;
-        writer.write_all(self.serialize().as_bytes()).unwrap();
+    pub fn save<S: AsRef<str>>(&self, file_name: S) {
+        // TODO: how would I handle save errors? crash the game? print some diagnostic log?
+        savefile::save_file(file_name.as_ref(), 0, self).unwrap()
     }
 
-    pub fn serialize(&self) -> String {
-        let mut serialized_board = String::new();
-        for entry in &self.entries {
-            serialized_board += &format!("{} {}\n", entry.name, entry.score);
-        }
-        serialized_board
+    #[cfg(test)]
+    pub fn serialize(&self) -> Vec<u8> {
+        savefile::save_to_mem(0, self).unwrap()
     }
 
     pub fn get_place_on_leaderboard(&self, score: usize) -> Option<usize> {

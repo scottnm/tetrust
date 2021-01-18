@@ -616,8 +616,8 @@ fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Sc
                     | pancurses::Input::Character(ASCII_DEL)
                     | pancurses::Input::KeyBackspace
                     | pancurses::Input::KeyDC => {
-                        initials[next_initial] = '_';
                         next_initial = std::cmp::max(1, next_initial) - 1;
+                        initials[next_initial] = '_';
                     }
                     pancurses::Input::Character(letter) => {
                         if next_initial < initials.len() {

@@ -18,6 +18,11 @@ const TITLE: &str = "TETRUST";
 
 const LEADERBOARD_FILE_NAME: &str = "data/leaderboard";
 
+const ASCII_ESC: char = 27 as char;
+const ASCII_BACKSPACE: char = 8 as char;
+const ASCII_DEL: char = 127 as char;
+const ASCII_ENTER: char = 10 as char;
+
 struct Colors {}
 
 impl Colors {
@@ -231,7 +236,6 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
 
         // Input handling
         // TODO: I think this input system might need some refactoring to share with the start menu
-        const ENTER_KEY: char = 10 as char;
         if let Some(pancurses::Input::Character(ch)) = window.getch() {
             match ch {
                 // check for movement inputs
@@ -249,7 +253,7 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
                         menu_cursor + 1
                     }
                 }
-                ENTER_KEY => return MENU_OPTION_RESULTS[menu_cursor],
+                ASCII_ENTER => return MENU_OPTION_RESULTS[menu_cursor],
                 _ => (),
             }
         };
@@ -345,21 +349,21 @@ fn run_game(window: &pancurses::Window) -> Option<Screen> {
         // Input handling
         let next_key = window.getch();
         // TODO: I think this input system might need some refactoring to share with the start menu
-        if let Some(pancurses::Input::Character(ch)) = next_key {
-            match ch {
+        if let Some(input) = next_key {
+            match input {
                 // check for movement inputs
-                'a' => inputs.move_left = true,
-                'd' => inputs.move_right = true,
-                's' => inputs.drop = true,
-                'j' => inputs.rot_left = true,
-                'l' => inputs.rot_right = true,
+                pancurses::Input::Character('a') => inputs.move_left = true,
+                pancurses::Input::Character('d') => inputs.move_right = true,
+                pancurses::Input::Character('s') => inputs.drop = true,
+                pancurses::Input::KeyLeft => inputs.rot_left = true,
+                pancurses::Input::KeyRight => inputs.rot_right = true,
 
                 // debug
-                'q' => break,                          // kill game early
-                'p' => game_paused = !game_paused,     // toggle the pause state
-                'z' => frame_speed_modifier /= 2.0f32, // slowdown tick rate
-                'x' => frame_speed_modifier = 1.0f32,  // reset tick rate
-                'c' => frame_speed_modifier *= 2.0f32, // speed up tick rate
+                pancurses::Input::Character(ASCII_ESC) => break, // kill game early
+                pancurses::Input::Character('p') => game_paused = !game_paused, // toggle the pause state
+                pancurses::Input::Character('z') => frame_speed_modifier /= 2.0f32, // slowdown tick rate
+                pancurses::Input::Character('x') => frame_speed_modifier = 1.0f32, // reset tick rate
+                pancurses::Input::Character('c') => frame_speed_modifier *= 2.0f32, // speed up tick rate
                 _ => (),
             }
         };
@@ -604,22 +608,24 @@ fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Sc
         let mut initials = ['_'; 3];
 
         loop {
-            const ENTER_KEY: char = 10 as char;
-            const BKSPC_KEY: char = 08 as char;
-            if let Some(pancurses::Input::Character(ch)) = window.getch() {
-                match ch {
+            if let Some(input) = window.getch() {
+                match input {
                     // check for movement inputs
-                    ENTER_KEY => break,
-                    BKSPC_KEY => {
+                    pancurses::Input::Character(ASCII_ENTER) | pancurses::Input::KeyEnter => break,
+                    pancurses::Input::Character(ASCII_BACKSPACE)
+                    | pancurses::Input::Character(ASCII_DEL)
+                    | pancurses::Input::KeyBackspace
+                    | pancurses::Input::KeyDC => {
                         initials[next_initial] = '_';
                         next_initial = std::cmp::max(1, next_initial) - 1;
                     }
-                    letter => {
+                    pancurses::Input::Character(letter) => {
                         if next_initial < initials.len() {
                             initials[next_initial] = letter;
                             next_initial += 1;
                         }
                     }
+                    _ => (),
                 }
             };
 
@@ -673,11 +679,12 @@ fn run_leaderboard_display(window: &pancurses::Window) -> Option<Screen> {
 fn main() {
     // setup the window
     let window = pancurses::initscr();
-    pancurses::noecho();
+    pancurses::noecho(); // prevent key inputs rendering to the screen
     pancurses::cbreak();
     pancurses::curs_set(0);
     pancurses::set_title(TITLE);
-    window.nodelay(true);
+    window.nodelay(true); // don't block waiting for key inputs (we'll poll)
+    window.keypad(true); // let special keys be captured by the program (i.e. esc/backspace/del/arrow keys)
 
     // setup the color system
     Colors::setup();

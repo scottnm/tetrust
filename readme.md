@@ -1,5 +1,3 @@
-# Tetrust
-
 ```
  _____________
 /\____________\ ___  _____  ___  .   .   ___   _____
@@ -9,6 +7,10 @@
        \ \___\
         \/___/
 ```
+
+# Tetrust
+
+![Tests](https://github.com/scottnm/tetrust/workflows/Tests/badge.svg)
 
 ## Intent
 
@@ -103,5 +105,5 @@
 
 ![Image of leaderboard](demo/16-leaderboard.gif)
 
-- [ ] Add CI/CD to github repo
+- [X] ![Automated CI/CD testing](https://github.com/scottnm/tetrust/workflows/Tests/badge.svg)
 

@@ -3,8 +3,32 @@
 mod tests {
     use crate::block::*;
     use crate::game::*;
+    use crate::leaderboard::*;
     use crate::randwrapper::*;
     use crate::util::*;
+
+    struct SelfDestructingFile {
+        path: std::path::PathBuf,
+    }
+
+    impl SelfDestructingFile {
+        fn new<P: AsRef<std::path::Path>>(path: P, data: String) -> Self {
+            let file = std::fs::File::create(&path).unwrap();
+            let mut writer = std::io::LineWriter::new(file);
+            use std::io::Write;
+            writer.write_all(data.as_bytes()).unwrap();
+
+            let mut pathbuf = std::path::PathBuf::new();
+            pathbuf.push(path);
+            SelfDestructingFile { path: pathbuf }
+        }
+    }
+
+    impl Drop for SelfDestructingFile {
+        fn drop(&mut self) {
+            std::fs::remove_file(self.path.as_path()).unwrap();
+        }
+    }
 
     fn tick(game_state: &mut GameState) {
         const STEADY_TICK: std::time::Duration = std::time::Duration::from_millis(250);
@@ -550,5 +574,129 @@ mod tests {
         drop_active_block(&mut game_state);
         assert!(game_state.score() > start_score);
         assert_eq!(game_state.level(), start_level + 1);
+    }
+
+    #[test]
+    fn test_leaderboard() {
+        let mut leaderboard = Leaderboard::new();
+
+        struct TestData {
+            score: usize,
+            expected_pos: usize,
+        }
+
+        let test_values = [
+            TestData {
+                score: 700,
+                expected_pos: 0,
+            },
+            TestData {
+                score: 800,
+                expected_pos: 0,
+            },
+            TestData {
+                score: 750,
+                expected_pos: 1,
+            },
+            TestData {
+                score: 500,
+                expected_pos: 3,
+            },
+            TestData {
+                score: 200,
+                expected_pos: 4,
+            },
+            TestData {
+                score: 250,
+                expected_pos: 4,
+            },
+            TestData {
+                score: 300,
+                expected_pos: 4,
+            },
+            TestData {
+                score: 775,
+                expected_pos: 1,
+            },
+            TestData {
+                score: 100,
+                expected_pos: 8,
+            },
+            TestData {
+                score: 50,
+                expected_pos: 9,
+            },
+            TestData {
+                score: 200,
+                expected_pos: 8,
+            },
+        ];
+
+        fn name_from_index(i: usize) -> String {
+            format!("n{:02}", i)
+        }
+
+        let final_score_indices: [usize; Leaderboard::max_entries()] =
+            [1, 7, 2, 0, 3, 6, 5, 4, 10, 8];
+        let expected_entries: Vec<LeaderboardEntry> = final_score_indices
+            .iter()
+            .map(|final_score_index| LeaderboardEntry {
+                name: name_from_index(*final_score_index),
+                score: test_values[*final_score_index].score,
+            })
+            .collect();
+        let expected_final_leaderboard = Leaderboard::from_raw(expected_entries);
+
+        for (i, test) in test_values.iter().enumerate() {
+            let place = leaderboard.get_place_on_leaderboard(test.score);
+            assert_eq!(place, Some(test.expected_pos));
+
+            let name = name_from_index(i);
+            leaderboard.add_score(name, test.score);
+        }
+
+        // Verify that there are 10 entries on the leaderboard
+        assert!(leaderboard.entry(final_score_indices.len() - 1).is_some());
+
+        // Check each entry on the leaderboard
+        assert_eq!(leaderboard, expected_final_leaderboard);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_leaderboard_add_fails() {
+        const TEST_SCORE: usize = 100;
+
+        let mut leaderboard = Leaderboard::new();
+
+        for _ in 0..Leaderboard::max_entries() {
+            assert!(leaderboard.get_place_on_leaderboard(TEST_SCORE).is_some());
+            leaderboard.add_score("test", TEST_SCORE);
+        }
+
+        assert!(leaderboard
+            .get_place_on_leaderboard(TEST_SCORE - 1)
+            .is_none());
+    }
+
+    #[test]
+    fn test_new_leaderboard_file_missing() {
+        let leaderboard_from_file = Leaderboard::load("data/does_not_exist.leaderboard");
+        assert!(leaderboard_from_file.is_err());
+    }
+
+    #[test]
+    fn test_new_leaderboard_from_file() {
+        let mut dummy_leaderboard = Leaderboard::new();
+        dummy_leaderboard.add_score("ld5", 700);
+        dummy_leaderboard.add_score("ld3", 900);
+        dummy_leaderboard.add_score("ld4", 800);
+        dummy_leaderboard.add_score("ld1", 1000);
+        dummy_leaderboard.add_score("ld2", 1000);
+
+        let dummy_file_name = "data/test_leaderboard";
+        let _dummy_file = SelfDestructingFile::new(dummy_file_name, dummy_leaderboard.serialize());
+        let leaderboard_from_file = Leaderboard::load(dummy_file_name).unwrap();
+        assert_eq!(leaderboard_from_file, dummy_leaderboard);
     }
 }

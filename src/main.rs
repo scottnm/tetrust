@@ -2,17 +2,21 @@ extern crate pancurses;
 extern crate rand;
 mod block;
 mod game;
+mod leaderboard;
 mod randwrapper;
 mod tests;
 mod util;
 
 use crate::block::*;
 use crate::game::*;
+use crate::leaderboard::*;
 use crate::randwrapper::*;
 use crate::util::*;
 use std::time;
 
 const TITLE: &str = "TETRUST";
+
+const LEADERBOARD_FILE_NAME: &str = "data/leaderboard";
 
 struct Colors {}
 
@@ -148,6 +152,8 @@ where
 enum Screen {
     StartMenu,
     Game,
+    LeaderboardUpdate(usize),
+    Leaderboard,
 }
 
 fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
@@ -178,8 +184,9 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
     };
 
     let mut menu_cursor: usize = 0;
-    const MENU_OPTIONS: [&str; 2] = ["Start Game", "Quit"];
-    const MENU_OPTION_RESULTS: [Option<Screen>; MENU_OPTIONS.len()] = [Some(Screen::Game), None];
+    const MENU_OPTIONS: [&str; 3] = ["Start Game", "Leaderboard", "Quit"];
+    const MENU_OPTION_RESULTS: [Option<Screen>; MENU_OPTIONS.len()] =
+        [Some(Screen::Game), Some(Screen::Leaderboard), None];
 
     let menu_rect = {
         let menu_width = MENU_OPTIONS
@@ -228,8 +235,20 @@ fn run_start_menu(window: &pancurses::Window) -> Option<Screen> {
         if let Some(pancurses::Input::Character(ch)) = window.getch() {
             match ch {
                 // check for movement inputs
-                'w' => menu_cursor = menu_cursor.wrapping_add(1) % MENU_OPTIONS.len(),
-                's' => menu_cursor = menu_cursor.wrapping_sub(1) % MENU_OPTIONS.len(),
+                'w' => {
+                    menu_cursor = if menu_cursor == 0 {
+                        MENU_OPTIONS.len() - 1
+                    } else {
+                        menu_cursor - 1
+                    }
+                }
+                's' => {
+                    menu_cursor = if menu_cursor == MENU_OPTIONS.len() - 1 {
+                        0
+                    } else {
+                        menu_cursor + 1
+                    }
+                }
                 ENTER_KEY => return MENU_OPTION_RESULTS[menu_cursor],
                 _ => (),
             }
@@ -486,6 +505,168 @@ fn run_game(window: &pancurses::Window) -> Option<Screen> {
         window.refresh();
     }
 
+    Some(Screen::LeaderboardUpdate(game_state.score()))
+}
+
+fn display_leaderboard(
+    window: &pancurses::Window,
+    leaderboard: &Leaderboard,
+    skip_entry: Option<usize>,
+) {
+    let leaderboard_rect = {
+        //      Leaderboard
+        //
+        // #00      FML      00000
+        //
+        // #01      FML      00000
+        // ...
+        // #10      FML      00000
+        const LEADERBOARD_ENTRY_WIDTH: i32 = 21;
+        const LEADERBOARD_HEIGHT: i32 = (2 * (Leaderboard::max_entries() + 1) - 1) as i32;
+
+        let (window_height, window_width) = window.get_max_yx();
+        Rect {
+            left: (window_width - LEADERBOARD_ENTRY_WIDTH) / 2,
+            top: (window_height - LEADERBOARD_HEIGHT) / 2,
+            width: LEADERBOARD_ENTRY_WIDTH,
+            height: LEADERBOARD_HEIGHT,
+        }
+    };
+
+    let leaderboard_frame_rect = Rect {
+        left: leaderboard_rect.left - 1,
+        top: leaderboard_rect.top - 1,
+        width: leaderboard_rect.width + 2,
+        height: leaderboard_rect.height + 2,
+    };
+
+    draw_frame(&window, &leaderboard_frame_rect);
+    draw_text_centered(
+        &window,
+        "Leaderboard",
+        leaderboard_rect.center_x(),
+        leaderboard_rect.top,
+    );
+
+    for i in 0..Leaderboard::max_entries() {
+        let entry = leaderboard.entry(i);
+        let (name, score) = entry
+            .map(|e| (e.name.as_ref(), e.score))
+            .unwrap_or(("---", 0));
+
+        let mut leaderboard_pos = i + 1;
+        if skip_entry.is_some() && skip_entry.unwrap() <= i {
+            leaderboard_pos += 1;
+        }
+
+        if leaderboard_pos <= Leaderboard::max_entries() {
+            let row_offset = (leaderboard_pos * 2) as i32;
+
+            draw_text_centered(
+                &window,
+                &format!("#{:02}    {:3}    {:05}", leaderboard_pos, name, score),
+                leaderboard_rect.center_x(),
+                leaderboard_rect.top + row_offset,
+            );
+        }
+    }
+}
+
+fn run_leaderboard_update(window: &pancurses::Window, score: usize) -> Option<Screen> {
+    let mut leaderboard = {
+        let leaderboard_from_file = Leaderboard::load(LEADERBOARD_FILE_NAME);
+        leaderboard_from_file.unwrap_or(Leaderboard::new())
+    };
+
+    let new_leaderboard_entry_pos = leaderboard.get_place_on_leaderboard(score);
+    if new_leaderboard_entry_pos.is_some() {
+        let leaderboard_rect = {
+            //      Leaderboard
+            //
+            // #00      FML      00000
+            //
+            // #01      FML      00000
+            // ...
+            // #10      FML      00000
+            const LEADERBOARD_ENTRY_WIDTH: i32 = 21;
+            const LEADERBOARD_HEIGHT: i32 = (2 * (Leaderboard::max_entries() + 1) - 1) as i32;
+
+            let (window_height, window_width) = window.get_max_yx();
+            Rect {
+                left: (window_width - LEADERBOARD_ENTRY_WIDTH) / 2,
+                top: (window_height - LEADERBOARD_HEIGHT) / 2,
+                width: LEADERBOARD_ENTRY_WIDTH,
+                height: LEADERBOARD_HEIGHT,
+            }
+        };
+
+        let mut next_initial = 0;
+        let mut initials = ['_'; 3];
+
+        loop {
+            const ENTER_KEY: char = 10 as char;
+            const BKSPC_KEY: char = 08 as char;
+            if let Some(pancurses::Input::Character(ch)) = window.getch() {
+                match ch {
+                    // check for movement inputs
+                    ENTER_KEY => break,
+                    BKSPC_KEY => {
+                        initials[next_initial] = '_';
+                        next_initial = std::cmp::max(1, next_initial) - 1;
+                    }
+                    letter => {
+                        if next_initial < initials.len() {
+                            initials[next_initial] = letter;
+                            next_initial += 1;
+                        }
+                    }
+                }
+            };
+
+            window.erase();
+            display_leaderboard(&window, &leaderboard, new_leaderboard_entry_pos);
+
+            let leaderboard_pos = new_leaderboard_entry_pos.unwrap() + 1;
+            let row_offset = (leaderboard_pos * 2) as i32;
+
+            // Render the new entry WIP space
+            window.attron(pancurses::A_BLINK);
+            draw_text_centered(
+                &window,
+                &format!(
+                    "#{:02}    {}{}{}    {:05}",
+                    leaderboard_pos, initials[0], initials[1], initials[2], score
+                ),
+                leaderboard_rect.center_x(),
+                leaderboard_rect.top + row_offset,
+            );
+            window.attroff(pancurses::A_BLINK);
+
+            window.refresh();
+        }
+
+        let name = initials
+            .iter()
+            .map(|initial| if *initial == '_' { ' ' } else { *initial })
+            .collect::<String>();
+        leaderboard.add_score(name, score);
+        leaderboard.save("data/leaderboard");
+    }
+
+    Some(Screen::Leaderboard)
+}
+
+fn run_leaderboard_display(window: &pancurses::Window) -> Option<Screen> {
+    let leaderboard = {
+        let leaderboard_from_file = Leaderboard::load(LEADERBOARD_FILE_NAME);
+        leaderboard_from_file.unwrap_or(Leaderboard::new())
+    };
+
+    window.erase();
+    display_leaderboard(&window, &leaderboard, None);
+    window.refresh();
+    std::thread::sleep(std::time::Duration::from_secs(3));
+
     Some(Screen::StartMenu)
 }
 
@@ -504,15 +685,15 @@ fn main() {
     // Run the game until we quit
     let mut screen = Screen::StartMenu;
     loop {
-        println!("Running {:?}", screen);
         // Run the current screen until it signals a transition
         let next_screen = match screen {
             Screen::StartMenu => run_start_menu(&window),
             Screen::Game => run_game(&window),
+            Screen::LeaderboardUpdate(score) => run_leaderboard_update(&window, score),
+            Screen::Leaderboard => run_leaderboard_display(&window),
         };
 
         // If the transition includes a new screen start rendering that.
-        println!("Next {:?}", next_screen);
         screen = match next_screen {
             Some(s) => s,
             None => break,

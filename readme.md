@@ -99,7 +99,9 @@
 
 ![Image of start screen](demo/15-screens.gif)
 
-- [ ] Add high score logging
-- [ ] Add high score screen from start
+- [X] [Add leaderboard](https://github.com/scottnm/tetrust/commit/FILLIN)
+
+![Image of leaderboard](demo/16-leaderboard.gif)
+
 - [ ] Add CI/CD to github repo
 

@@ -12,11 +12,11 @@ mod tests {
     }
 
     impl SelfDestructingFile {
-        fn new<P: AsRef<std::path::Path>>(path: P, data: String) -> Self {
+        fn new<P: AsRef<std::path::Path>>(path: P, data: &[u8]) -> Self {
             let file = std::fs::File::create(&path).unwrap();
             let mut writer = std::io::LineWriter::new(file);
             use std::io::Write;
-            writer.write_all(data.as_bytes()).unwrap();
+            writer.write_all(data).unwrap();
 
             let mut pathbuf = std::path::PathBuf::new();
             pathbuf.push(path);
@@ -695,7 +695,7 @@ mod tests {
         dummy_leaderboard.add_score("ld2", 1000);
 
         let dummy_file_name = "data/test_leaderboard";
-        let _dummy_file = SelfDestructingFile::new(dummy_file_name, dummy_leaderboard.serialize());
+        let _dummy_file = SelfDestructingFile::new(dummy_file_name, &dummy_leaderboard.serialize());
         let leaderboard_from_file = Leaderboard::load(dummy_file_name).unwrap();
         assert_eq!(leaderboard_from_file, dummy_leaderboard);
     }

@@ -483,6 +483,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
 
 [[package]]
+name = "snm_rand_utils"
+version = "0.1.0"
+source = "git+https://github.com/scottnm/snm_rand_utils?branch=main#4cf6e0b0f7abe6fe8adeae640046e98985b87211"
+dependencies = [
+ "rand",
+]
+
+[[package]]
 name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -530,6 +538,7 @@ dependencies = [
  "rand",
  "savefile",
  "savefile-derive",
+ "snm_rand_utils",
 ]
 
 [[package]]

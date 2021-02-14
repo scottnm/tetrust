@@ -4,8 +4,9 @@ mod tests {
     use crate::block::*;
     use crate::game::*;
     use crate::leaderboard::*;
-    use crate::randwrapper::*;
     use crate::util::*;
+    use snm_rand_utils::range_rng::*;
+    use snm_rand_utils::*;
 
     struct SelfDestructingFile {
         path: std::path::PathBuf,

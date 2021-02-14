@@ -1,20 +1,20 @@
 #[macro_use]
 extern crate savefile_derive;
 extern crate pancurses;
-extern crate rand;
 extern crate savefile;
+extern crate snm_rand_utils;
+
 mod block;
 mod game;
 mod leaderboard;
-mod randwrapper;
 mod tests;
 mod util;
 
 use crate::block::*;
 use crate::game::*;
 use crate::leaderboard::*;
-use crate::randwrapper::*;
 use crate::util::*;
+use snm_rand_utils::range_rng::*;
 use std::time;
 
 const TITLE: &str = "TETRUST";

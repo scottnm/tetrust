@@ -1,5 +1,5 @@
-use crate::randwrapper::*;
 use crate::util::*;
+use snm_rand_utils::range_rng::*;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Rotation {

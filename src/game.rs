@@ -1,6 +1,6 @@
 use crate::block::*;
-use crate::randwrapper::*;
 use crate::util::*;
+use snm_rand_utils::range_rng::*;
 
 #[derive(PartialEq, Eq)]
 enum GamePhase {

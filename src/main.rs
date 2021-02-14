@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate savefile_derive;
 extern crate pancurses;
-extern crate rand;
 extern crate savefile;
 extern crate snm_rand_utils;
 

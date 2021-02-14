@@ -535,7 +535,6 @@ name = "tetrust"
 version = "0.1.0"
 dependencies = [
  "pancurses",
- "rand",
  "savefile",
  "savefile-derive",
  "snm_rand_utils",

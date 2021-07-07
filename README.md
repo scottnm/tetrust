@@ -46,16 +46,14 @@ As this is a personal project, there are a lot of gaps in functionality and poli
 
 - no in-game control explanations
 - no SFX
-- no installer
 
 Nevertheless, I still consider the game, emotionally, in a V1 state. Bear with me :)
 
 ## Installation
 
-There is currently no installer. To install and play the game, you'll need to build and run from source which isn't too gnarly. As a prerequisite you'll need a reasonably up-to-date rust installation.
-
 1. clone this repo
-2. `cargo run --release`
+2. `cargo install --path .`
+Run the application from the command-line using 'tetrust'
 
 ## v1.0 Features
 

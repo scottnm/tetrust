@@ -37,8 +37,8 @@ Why did I spend my time working on this?
 
 - I wanted to write more rust code
 - I wanted to write a TUI game
-- Initially I had aspirations this might be a good playground to experiment with data-oriented design and entity-component systems. That never panned out, but it was an original motivator.
-- I found it super creatively gratifying to make something to a semi-polished "v1" state.
+- Initially, I had aspirations this might be a good playground to experiment with data-oriented design and entity-component systems. That never panned out, but it was an original motivator.
+- I found it gratifying to build something to a semi-polished "v1" state. Often, my toy projects get 40-80 hours of time from me before I hit some wall and lose motivation before getting to any kind of demo state. 
 
 ## Known gaps
 
@@ -48,7 +48,7 @@ As this is a personal project, there are a lot of gaps in functionality and poli
 - no SFX
 - no installer
 
-Nevertheless, I still consider the game, emotionally, in a V1 state. Bear with me :)
+Nevertheless, I still consider the game in a V1 state. Humor me :)
 
 ## Installation
 
@@ -152,7 +152,7 @@ As I was working on the project I thought it'd be fun to record each milestone i
 ## Project reflections
 
 - V1 (Jan 18. 2021)
-    - Tetris has some surprisingly interesting and complex rules that have changed and been tuned across it's many iterations. The one I found most interesting (which I still don't really have a good implemenation for) was that many tetris games iterated on how pieces were allowed to rotate. In some early forms it was super simple but as the game was re-implemented and improved it became more complex. The gold standard for tetris games now usually requires some for wall kicking.
-    - As I was closing in on V1, it was wild to look back at the first commit in the repo. I started the project in mid 2019 and dropped it after making some sizable progress but running into a blocker with how I wanted to constrain the tetris board. It was super emotionally gratifying to come back to the project a year and a  half later, unblock myself, and get to a V1. Tying up loose ends is a special sort of satisfying.
+    - Tetris has some surprisingly interesting and complex rules that have changed and been tuned across its many iterations. The one I found most interesting (which I still don't really have a good implemenation for) was that many tetris games iterated on how pieces were allowed to rotate. In some early forms it was super simple but as the game was re-implemented and improved it became more complex. The gold standard for tetris games now usually requires some logic for "wall kicking".
+    - As I was closing in on V1, it was wild to look back at the first commit in the repo. I started the project in mid 2019 and dropped it after making some sizable progress but running into a blocker with how I wanted to constrain the tetris board. It was very gratifying to come back to the project a year and a  half later, unblock myself, and get to a V1. Tying up loose ends is a special sort of satisfying.
 
-To be continue...?
+To be continued...? (probably not)
